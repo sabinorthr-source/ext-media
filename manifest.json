@@ -1,17 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Extractor Multimedia",
-  "version": "1.4.0",
-  "description": "Galería temporal de imágenes, videos, embeds y enlaces de temas XenForo.",
-  "permissions": ["activeTab", "storage"],
+  "version": "1.2.0",
+  "description": "Galería temporal de imágenes, videos, embeds y enlaces de un tema del foro.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
   "host_permissions": [
     "https://perutops.com/*",
     "https://forosperu.club/*",
     "https://www.perutops.com/*",
     "https://www.forosperu.club/*"
   ],
-  "action": { "default_title": "Extraer multimedia", "default_popup": "popup.html" },
-  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Extraer multimedia",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -21,13 +29,6 @@
         "https://www.forosperu.club/*"
       ],
       "js": [
-        "shared/protocol.js",
-        "core/media-classifier.js",
-        "core/s9e-parser.js",
-        "core/concurrency.js",
-        "core/xenforo-parser.js",
-        "core/attachment-resolver.js",
-        "core/thread-crawler.js",
         "content.js"
       ],
       "run_at": "document_idle"

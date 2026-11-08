@@ -2,161 +2,235 @@
   if (window.__extractorMultimediaInstalled) return;
   window.__extractorMultimediaInstalled = true;
 
-  const TYPES = ExtractorProtocol.TYPES;
-  const PAGE_TIMEOUT_MS = 20000;
-  let runId = null;
-  let controller = null;
+  const MAX_PAGES = 200;
+  let running = false;
 
-  function fetchPage(url, signal) {
-    const local = new AbortController();
-    const timer = setTimeout(() => local.abort(new Error("PAGE_TIMEOUT")), PAGE_TIMEOUT_MS);
-    const abort = () => local.abort(signal.reason || new DOMException("Cancelado", "AbortError"));
-    if (signal.aborted) abort(); else signal.addEventListener("abort", abort, { once: true });
-    return fetch(url, { credentials: "include", redirect: "follow", signal: local.signal })
-      .finally(() => { clearTimeout(timer); signal.removeEventListener("abort", abort); });
-  }
-  async function progress(currentRunId, data) {
-    try { await chrome.runtime.sendMessage({ type: TYPES.PROGRESS, runId: currentRunId, ...data }); } catch {}
-  }
-  function isLogin(response, doc) {
-    const url = String(response.url || "").toLowerCase();
-    return /\/(?:login|register)(?:[/?#]|$)/.test(url) ||
-      (!!doc.querySelector('form[action*="login"], input[name="login"]') && /sign in|iniciar sesión|iniciar sesion/i.test(`${doc.title} ${doc.body?.textContent?.slice(0, 500)}`));
-  }
-  function validPage(raw, identity) {
+  const absolute = (value, base) => {
+    if (!value) return "";
+    try { return new URL(value, base).href; } catch { return ""; }
+  };
+  const cleanText = value => String(value || "").replace(/\s+/g, " ").trim();
+
+  function classifyUrl(url, label = "") {
+    const raw = String(url || "");
+    const path = raw.split(/[?#]/)[0].toLowerCase();
+    const name = String(label || "").toLowerCase();
+    let queryName = "";
     try {
-      const url = new URL(raw, identity.origin);
-      const parsed = ExtractorProtocol.parseThreadIdentity(url.href);
-      if (!parsed || url.origin !== identity.origin || parsed.threadId !== identity.threadId) return "";
-      url.hash = "";
-      return url.href;
+      const parsed = new URL(raw, location.href);
+      queryName = parsed.searchParams.get("a") || "";
+    } catch {}
+    const both = `${path} ${name} ${queryName.toLowerCase()}`;
+    if (/^data:image\//i.test(raw)) return "ui";
+    if (/\/(?:avatars?|medals?)\//i.test(path) || /avatar|reaction|favicon|emoji|medal|medalla|distintivo/i.test(name)) return "ui";
+    if (/(?:youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com)/i.test(raw)) return "embed";
+    if (/(?:t\.me|telegram\.me|telegram\.dog)(?:\/|$)/i.test(raw)) return "telegram";
+    if (/\.(?:jpe?g|png|gif|webp|avif|bmp|tiff?)(?:$)/i.test(path) || /\.(?:jpe?g|png|gif|webp|avif|bmp|tiff?)(?:$|[\s"'])/i.test(name) || /-(?:jpe?g|png|gif|webp|avif|bmp|tiff?)(?:[./?#\s]|$)/i.test(both)) return "image";
+    if (/\.(?:mp4|webm|mov|m4v|ogv|ogg|mkv)(?:$)/i.test(path) || /-(?:mp4|webm|mov|m4v|ogv|ogg|mkv)(?:[./?#\s]|$)/i.test(both)) return "video";
+    if (/\/attachments\//i.test(path)) return "attachment";
+    return "link";
+  }
+
+  function addItem(map, item) {
+    if (!item?.url) return;
+    const key = item.url;
+    const old = map.get(key);
+    if (!old) { map.set(key, item); return; }
+    const rank = { ui: 0, link: 1, attachment: 2, embed: 3, telegram: 3, image: 4, video: 5 };
+    if ((rank[item.type] || 0) > (rank[old.type] || 0)) old.type = item.type;
+    for (const field of ["title", "author", "sourcePage", "preview", "fallbackUrl", "attachmentPage", "playUrl", "mimeType"]) {
+      if ((!old[field] || old[field] === "Adjunto") && item[field]) old[field] = item[field];
+    }
+  }
+
+  function threadPageUrl(raw, base) {
+    const full = absolute(raw, base);
+    if (!full) return "";
+    try {
+      const u = new URL(full);
+      if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return "";
+      if (!/\/threads\//i.test(u.pathname) || /\/posts\/|\/attachments\//i.test(u.pathname)) return "";
+      u.hash = "";
+      return u.href;
     } catch { return ""; }
   }
-  function isLikelyThreadLink(raw, currentIdentity) {
-    try {
-      const url = new URL(raw, currentIdentity.origin);
-      const identity = ExtractorProtocol.parseThreadIdentity(url.href);
-      if (!identity || identity.origin !== currentIdentity.origin || identity.threadId === currentIdentity.threadId) return null;
-      url.hash = "";
-      return { url: url.href, identity };
-    } catch { return null; }
+
+  function getImageUrl(img, pageUrl) {
+    const wrapper = img.closest(".bbImageWrapper[data-src], .js-lbImage[data-src]");
+    // XenForo suele poner la imagen de tamaño original en data-src del wrapper.
+    const raw = wrapper?.getAttribute("data-src") ||
+      img.getAttribute("data-src") || img.getAttribute("data-url") ||
+      img.getAttribute("data-original") || img.getAttribute("src") ||
+      (img.getAttribute("srcset") || "").split(",").map(x => x.trim().split(/\s+/)[0]).filter(Boolean).pop();
+    return absolute(raw, pageUrl);
   }
 
-  async function scrape(signal, currentRunId, startIdentity, options) {
-    const maxPages = Math.max(1, Math.min(5000, Number(options.maxPages) || 1000));
-    const includeLinkedThreads = options.includeLinkedThreads === true;
-    const maxLinkedThreads = Math.max(0, Math.min(100, Number(options.maxLinkedThreads) || 25));
-    const items = new Map();
-    const queue = ExtractorThreadCrawler.createQueue(location.href.split("#")[0], startIdentity);
-    const visited = new Set();
-    const failedPages = [];
-    const linkedSeen = new Set();
-    let pagesScanned = 0;
-    let pagesAttempted = 0;
-    let stopReason = "COMPLETED";
+  function extractDocument(doc, pageUrl, items, discoveredPages) {
+    const messages = doc.querySelectorAll(".message-cell--main, article.message, .message");
+    const roots = messages.length ? [...messages] : [doc.body];
 
-    while (queue.length && pagesAttempted < maxPages) {
-      if (signal.aborted || currentRunId !== runId) throw new DOMException("Cancelado", "AbortError");
-      const task = queue.shift();
-      const pageUrl = validPage(task.url, task.identity);
-      const visitKey = `${task.identity.threadId}|${pageUrl}`;
-      if (!pageUrl || visited.has(visitKey)) continue;
-      visited.add(visitKey);
-      pagesAttempted++;
+    for (const root of roots) {
+      const messageLink = root.querySelector(".message-attribution-main a[href*='/threads/'], .message-attribution a[href*='/threads/']")?.href || pageUrl;
+      const author = cleanText(root.querySelector(".message-name, .username, [itemprop='author']")?.textContent);
+
+      // Imágenes normales y las imágenes originales guardadas por XenForo en data-src.
+      for (const img of root.querySelectorAll("img")) {
+        const cls = `${img.className || ""} ${img.alt || ""} ${img.title || ""}`;
+        const excluded = img.closest(".message-cell--user,.message-avatar,.avatar,.message-attribution,.message-user,.message-signature,.bdMedal_messageUserMedals,.bdMedal_userMedals,.bdMedal_medalImage,.reaction,.reactions,.reactionsBar,.reactionSummary,.message-actionBar,.shareButtons");
+        if (excluded || /avatar|reaction|favicon|emoji|medal|medalla|distintivo/i.test(cls)) continue;
+        const url = getImageUrl(img, pageUrl);
+        if (!url || url.startsWith("data:")) continue;
+        const wrapperTitle = img.closest(".bbImageWrapper")?.getAttribute("title");
+        const title = cleanText(img.getAttribute("alt") || img.getAttribute("title") || wrapperTitle);
+        const type = classifyUrl(url, `${title} ${wrapperTitle || ""}`);
+        if (type === "ui" || !["image", "attachment"].includes(type)) continue;
+        const attachment = img.closest("a[href*='/attachments/']") || img.closest(".bbImageWrapper")?.closest("a[href]");
+        addItem(items, {
+          type: "image", url, title: title || "Imagen", sourcePage: messageLink,
+          author, preview: url,
+          fallbackUrl: absolute(img.getAttribute("src") || img.getAttribute("data-src"), pageUrl),
+          attachmentPage: attachment ? absolute(attachment.getAttribute("href"), pageUrl) : "",
+          original: true
+        });
+      }
+
+      // Vídeos inline: el src real normalmente está dentro de <source>.
+      for (const video of root.querySelectorAll("video")) {
+        const sources = [...video.querySelectorAll("source")];
+        const candidates = [video.getAttribute("src"), video.getAttribute("data-src"), ...sources.map(s => s.getAttribute("src") || s.getAttribute("data-src"))].filter(Boolean);
+        for (const raw of candidates) {
+          const url = absolute(raw, pageUrl);
+          if (!url) continue;
+          addItem(items, { type: "video", url, playUrl: url, title: cleanText(video.getAttribute("title") || video.getAttribute("data-filename")) || "Video", sourcePage: messageLink, author, preview: "" });
+        }
+      }
+
+      for (const frame of root.querySelectorAll("iframe")) {
+        const url = absolute(frame.getAttribute("src") || frame.getAttribute("data-src"), pageUrl);
+        if (!url || !/^https?:/i.test(url)) continue;
+        addItem(items, { type: "embed", url, title: cleanText(frame.title) || "Contenido incrustado", sourcePage: messageLink, author });
+      }
+
+      // Adjuntos XenForo: el nombre del archivo permite saber si una página de adjunto es vídeo.
+      for (const a of root.querySelectorAll(".message-attachments .file-preview,.attachmentList a[href],a[href*='/attachments/']")) {
+        if (a.closest(".message-editorWrapper,.message-editor,.fr-element,.formRow,.attachmentUpload")) continue;
+        if (/\/attachments\/upload(?:\?|$)/i.test(a.getAttribute("href") || "")) continue;
+        const img = a.querySelector("img");
+        if (img && classifyUrl(getImageUrl(img, pageUrl), img.alt || img.title) === "image") continue;
+        const url = absolute(a.getAttribute("href"), pageUrl);
+        if (!url) continue;
+        const filename = cleanText(a.closest(".file")?.querySelector(".file-name")?.textContent || a.getAttribute("title") || a.querySelector("svg title")?.textContent || a.textContent) || "Adjunto";
+        let type = classifyUrl(url, filename);
+        if (/\/attachments\/[^/?#]*(?:-mp4|-webm|-mov|-m4v)(?:[./?#]|$)/i.test(url) || /\.(?:mp4|webm|mov|m4v)$/i.test(filename)) type = "video";
+        if (/\.(?:jpe?g|png|gif|webp|avif|bmp)$/i.test(filename)) type = "image";
+        if (type === "ui") continue;
+        addItem(items, { type: ["image", "video"].includes(type) ? type : "attachment", url, title: filename, sourcePage: messageLink, author, preview: "", attachmentPage: url });
+      }
+
+      // Enlaces visibles, excluyendo controles internos de XenForo.
+      for (const a of root.querySelectorAll("a[href]")) {
+        const href = a.getAttribute("href") || "";
+        const image = a.querySelector("img");
+        if (/\/attachments\//i.test(href) && image && classifyUrl(getImageUrl(image, pageUrl), image.alt || image.title) === "image") continue;
+        const excluded = a.closest(".message-attribution,.message-cell--user,.message-user,.message-signature,.bdMedal_messageUserMedals,.bdMedal_userMedals,.bdMedal_medalImage,.reactionsBar,.reactionSummary,.reaction,.bbCodeBlock-sourceJump");
+        if (excluded || href.startsWith("#") || a.closest(".message-editorWrapper,.message-editor,.fr-element,.formRow,.attachmentUpload") ||
+          /\/attachments\/upload(?:\?|$)/i.test(href) || a.matches("[data-xf-click='attribution']") ||
+          /\/content-removal\//i.test(href) || /\/goto\/post(?:\?|\/|$)/i.test(href) ||
+          /\/members\//i.test(href) || /\/posts\/\d+\/(?:share|reactions|report)(?:\?|$)/i.test(href) ||
+          /\/threads\/[^/]+\/reply\?quote=\d+/i.test(href)) continue;
+        const url = absolute(href, pageUrl);
+        if (!url || !/^https?:/i.test(url)) continue;
+        const label = cleanText(a.textContent || a.getAttribute("title") || image?.alt || url);
+        let type = classifyUrl(url, label);
+        if (/\/attachments\/[^/?#]*(?:-mp4|-webm|-mov|-m4v)(?:[./?#]|$)/i.test(url)) type = "video";
+        if (type === "ui") continue;
+        addItem(items, { type, url, title: label.slice(0, 300), sourcePage: messageLink, author, preview: type === "image" ? url : "", attachmentPage: /\/attachments\//i.test(url) ? url : "" });
+      }
+
+      // URLs escritas como texto en los mensajes.
+      const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        if (node.parentElement?.closest("a,script,style,textarea")) continue;
+        for (let candidate of (node.nodeValue || "").match(/(?:https?:\/\/|www\.)[^\s<>"'«»]+/gi) || []) {
+          candidate = candidate.replace(/[.,;!?)\]}]+$/g, "");
+          const url = absolute(candidate.startsWith("www.") ? `https://${candidate}` : candidate, pageUrl);
+          if (!url || !/^https?:/i.test(url)) continue;
+          const type = classifyUrl(url, candidate);
+          if (type === "ui") continue;
+          addItem(items, { type, url, title: candidate, sourcePage: messageLink, author, preview: type === "image" ? url : "" });
+        }
+      }
+    }
+
+    for (const a of doc.querySelectorAll(".pageNav a[href],.pageNavWrapper a[href],.pagination a[href],a[href*='/page-']")) {
+      const next = threadPageUrl(a.href, pageUrl);
+      if (next) discoveredPages.add(next);
+    }
+  }
+
+  async function resolveAttachmentMedia(items) {
+    for (const item of items.values()) {
+      if (!/\/attachments\//i.test(item.url)) continue;
+      if (item.type === "image") continue;
       try {
-        let doc;
+        const response = await fetch(item.url, { credentials: "include", redirect: "follow" });
+        if (!response.ok) continue;
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const video = doc.querySelector("video");
+        const source = video?.querySelector("source");
+        const videoUrl = source?.getAttribute("src") || video?.getAttribute("src") ||
+          doc.querySelector('meta[property="og:video"],meta[property="og:video:url"],meta[name="twitter:player:stream"]')?.getAttribute("content");
+        if (videoUrl) {
+          const direct = absolute(videoUrl, response.url || item.url);
+          if (direct) { item.type = "video"; item.playUrl = direct; }
+        } else if (item.type === "attachment" && /\.(?:jpe?g|png|gif|webp|avif|bmp)/i.test(item.title)) {
+          const image = doc.querySelector(".bbImageWrapper[data-src],img.bbImage[src],img.bbImage[data-src]");
+          const raw = image?.closest(".bbImageWrapper")?.getAttribute("data-src") || image?.getAttribute("data-src") || image?.getAttribute("src");
+          const direct = absolute(raw, response.url || item.url);
+          if (direct) { item.type = "image"; item.url = direct; item.preview = direct; }
+        }
+      } catch (error) { console.debug("No se pudo resolver el adjunto:", item.url, error); }
+    }
+  }
+
+  async function scrapeAllPages() {
+    const items = new Map();
+    const visited = new Set();
+    const queue = [location.href.split("#")[0]];
+    let pagesScanned = 0;
+    while (queue.length && pagesScanned < MAX_PAGES) {
+      const pageUrl = queue.shift();
+      if (!pageUrl || visited.has(pageUrl)) continue;
+      visited.add(pageUrl);
+      let doc;
+      try {
         if (pageUrl === location.href.split("#")[0]) doc = document;
         else {
-          const response = await fetchPage(pageUrl, signal);
-          if (response.status === 401 || response.status === 403) throw new Error(`ACCESS_DENIED_HTTP_${response.status}`);
-          if (!response.ok) throw new Error(`HTTP_${response.status}`);
-          if (!/text\/html/i.test(response.headers.get("content-type") || "")) throw new Error("INVALID_CONTENT_TYPE");
+          const response = await fetch(pageUrl, { credentials: "include", redirect: "follow" });
+          if (!response.ok || !(response.headers.get("content-type") || "").includes("text/html")) continue;
           doc = new DOMParser().parseFromString(await response.text(), "text/html");
-          if (isLogin(response, doc)) throw new Error("AUTH_REQUIRED");
-          const finalIdentity = ExtractorProtocol.parseThreadIdentity(response.url);
-          if (!finalIdentity || finalIdentity.threadId !== task.identity.threadId || finalIdentity.origin !== task.identity.origin) throw new Error("REDIRECT_OUT_OF_THREAD");
         }
-        const parsed = ExtractorXenForo.extractDocument(doc, pageUrl);
-        if (!parsed.postsFound) throw new Error("NO_XENFORO_POSTS");
-        for (const item of parsed.items) {
-          item.threadId = task.identity.threadId;
-          item.threadUrl = `${task.identity.origin}/threads/${task.identity.threadSlug}/`;
-          const key = ExtractorMedia.normalize(item.url);
-          const existing = items.get(key);
-          if (!existing) items.set(key, item);
-          else {
-            const sources = item.sources || [];
-            for (const source of sources) {
-              if (!existing.sources.some(s => s.sourcePage === source.sourcePage && s.postId === source.postId && s.context === source.context)) existing.sources.push(source);
-            }
-            if (existing.context === "quoted" && item.context === "post") existing.context = "post";
-            if (existing.type === "attachment" && ["image", "video"].includes(item.type)) existing.type = item.type;
-          }
-        }
-        pagesScanned++;
-        for (const raw of parsed.nextPages) {
-          const next = validPage(raw, task.identity);
-          if (next) ExtractorThreadCrawler.enqueueUnique(queue, visited, next, task.identity, task.depth);
-        }
-        for (const raw of parsed.linkedThreads) {
-          const linked = isLikelyThreadLink(raw, task.identity);
-          if (!linked) continue;
-          linkedSeen.add(linked.identity.threadId);
-          if (includeLinkedThreads && task.depth < 1 && linkedSeen.size <= maxLinkedThreads) {
-            ExtractorThreadCrawler.enqueueUnique(queue, visited, linked.url, linked.identity, task.depth + 1);
-          }
-        }
-      } catch (error) {
-        if (signal.aborted) throw error;
-        failedPages.push({ url: pageUrl, threadId: task.identity.threadId, reason: error?.message || "UNKNOWN_ERROR" });
-      }
-      await progress(currentRunId, {
-        phase: "crawling", pagesScanned, pagesAttempted, pagesFailed: failedPages.length, itemsFound: items.size,
-        pendingPages: queue.length, linkedThreadsFound: linkedSeen.size,
-        ...(pagesScanned % 10 === 0 ? { checkpointItems: [...items.values()], failedPages: [...failedPages] } : {})
-      });
+      } catch (error) { console.warn("Error leyendo página:", pageUrl, error); continue; }
+      const discovered = new Set();
+      extractDocument(doc, pageUrl, items, discovered);
+      pagesScanned++;
+      for (const next of discovered) if (!visited.has(next) && !queue.includes(next)) queue.push(next);
+      chrome.runtime.sendMessage({ type: "EXTRACTOR_PROGRESS", pagesScanned, itemsFound: items.size }).catch(() => {});
     }
-    if (queue.length && pagesAttempted >= maxPages) stopReason = "PAGE_LIMIT_REACHED";
-    else if (failedPages.length) stopReason = "PAGES_FAILED";
-
-    const attachmentItems = [...items.values()].filter(item => item.type === "attachment" || item.attachmentPage);
-    await progress(currentRunId, { phase: "resolving_attachments", pagesScanned, pagesFailed: failedPages.length, itemsFound: items.size, attachmentsTotal: attachmentItems.length, attachmentsResolved: 0, checkpointItems: [...items.values()], failedPages: [...failedPages] });
-    await ExtractorAttachmentResolver.resolveAll([...items.values()], {
-      signal, concurrency: 4,
-      onProgress: async ({ completed, total }) => {
-        await progress(currentRunId, { phase: "resolving_attachments", pagesScanned, pagesFailed: failedPages.length, itemsFound: items.size, attachmentsTotal: total, attachmentsResolved: completed, ...(completed % 10 === 0 || completed === total ? { checkpointItems: [...items.values()], failedPages: [...failedPages] } : {}) });
-      }
-    });
-    const complete = stopReason === "COMPLETED" && failedPages.length === 0 && queue.length === 0;
-    return {
-      items: [...items.values()], pagesScanned, pagesAttempted, pagesFailed: failedPages.length, failedPages,
-      pendingPages: queue.length, stopReason, complete, status: complete ? "complete" : "partial",
-      sourceUrl: location.href, threadId: startIdentity.threadId, runId: currentRunId,
-      threadsScanned: new Set([...visited].map(k => k.split("|")[0])).size,
-      linkedThreadsFound: linkedSeen.size, linkedThreadsScanned: includeLinkedThreads ? Math.max(0, new Set([...visited].map(k => k.split("|")[0])).size - 1) : 0,
-      includeLinkedThreads, maxPages, concurrency: 4
-    };
+    await resolveAttachmentMedia(items);
+    return { items: [...items.values()], pagesScanned, sourceUrl: location.href };
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === TYPES.CANCEL) {
-      controller?.abort(); runId = null; sendResponse({ ok: true }); return;
-    }
-    if (message?.type !== TYPES.START) return;
-    const identity = ExtractorProtocol.parseThreadIdentity(location.href);
-    if (!identity) { sendResponse({ ok: false, error: "La página actual no es un tema válido de XenForo." }); return; }
-    if (String(message.threadId || identity.threadId) !== identity.threadId) { sendResponse({ ok: false, error: "El identificador del tema no coincide con la pestaña actual." }); return; }
-    controller?.abort();
-    runId = message.runId || String(Date.now());
-    const currentRunId = runId;
-    controller = new AbortController();
-    const signal = controller.signal;
-    sendResponse({ ok: true, runId: currentRunId, threadId: identity.threadId });
-    scrape(signal, currentRunId, identity, message.options || {})
-      .then(result => { if (!signal.aborted && runId === currentRunId) return chrome.runtime.sendMessage({ type: TYPES.RESULTS, ...result }); })
-      .catch(error => {
-        if (!signal.aborted && runId === currentRunId) chrome.runtime.sendMessage({ type: TYPES.RESULTS, items: [], pagesScanned: 0, pagesFailed: 1, failedPages: [{ url: location.href, reason: error?.message || "EXTRACTION_FAILED" }], pendingPages: 0, stopReason: "EXTRACTION_FAILED", complete: false, status: "failed", sourceUrl: location.href, threadId: identity.threadId, runId: currentRunId, error: error?.message || "La extracción falló." }).catch(() => {});
-      })
-      .finally(() => { if (runId === currentRunId) controller = null; });
+    if (message?.type !== "START_EXTRACTOR") return;
+    if (running) { sendResponse({ ok: false, error: "Ya hay una extracción en curso." }); return; }
+    running = true;
+    sendResponse({ ok: true });
+    scrapeAllPages().then(result => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", ...result }))
+      .catch(error => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", items: [], pagesScanned: 0, sourceUrl: location.href, error: error?.message || "La extracción falló." }).catch(() => {}))
+      .finally(() => { running = false; });
   });
 })();
