@@ -1,0 +1,47 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Galería multimedia del tema</title>
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Galería multimedia</h1>
+      <p id="summary">Cargando resultados de la sesión…</p>
+    </div>
+    <div class="actions">
+      <button id="exportJson">JSON</button>
+      <button id="exportCsv">CSV</button>
+      <button id="copyUrls">Copiar URL</button>
+      <button id="clear" class="danger">Limpiar</button>
+    </div>
+  </header>
+
+  <nav id="filters" class="filters" aria-label="Filtrar recursos">
+    <button data-filter="all" class="active">Todos <span class="count" data-count="all">0</span></button>
+    <button data-filter="image">Imágenes <span class="count" data-count="image">0</span></button>
+    <button data-filter="video">Videos <span class="count" data-count="video">0</span></button>
+    <button data-filter="embed">Embeds <span class="count" data-count="embed">0</span></button>
+    <button data-filter="telegram">Telegram <span class="count" data-count="telegram">0</span></button>
+    <button data-filter="link">Enlaces <span class="count" data-count="link">0</span></button>
+    <button data-filter="attachment">Adjuntos <span class="count" data-count="attachment">0</span></button>
+  </nav>
+
+  <p id="status" role="status"></p>
+  <main id="gallery" class="gallery"></main>
+
+  <dialog id="lightbox" class="lightbox">
+    <button id="lightboxClose" class="lightbox-close" aria-label="Cerrar">×</button>
+    <button id="lightboxPrev" class="lightbox-nav" aria-label="Imagen anterior">‹</button>
+    <div id="lightboxStage"></div>
+    <button id="lightboxNext" class="lightbox-nav" aria-label="Imagen siguiente">›</button>
+    <p id="lightboxCaption"></p>
+  </dialog>
+
+  <script src="gallery.js"></script>
+</body>
+</html>
