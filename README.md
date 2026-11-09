@@ -1,6 +1,6 @@
 # Ext-Media 1.5.1 — PR3.1 URLs originales + galería fluida
 
-Extensión Chrome Manifest V3 para extraer recursos multimedia del **tema activo** de `perutops.com` y consultarlos en una galería local. No usa backend, cuentas, sincronización remota ni dependencias de runtime.
+Extensión Chrome Manifest V3 para extraer recursos multimedia del **tema activo** de la web y consultarlos en una galería local. No usa backend, cuentas, sincronización remota ni dependencias de runtime.
 
 ## Instalación
 
@@ -8,15 +8,15 @@ Extensión Chrome Manifest V3 para extraer recursos multimedia del **tema activo
 2. Abre `chrome://extensions` y activa **Modo de desarrollador**.
 3. Si ya tienes cargada otra copia de Ext-Media, desactívala o elimínala para evitar confundir versiones.
 4. Pulsa **Cargar descomprimida** y selecciona la carpeta `ext-media-v1.5.1`.
-5. Abre un tema de PeruTops y ejecuta la extracción.
+5. Abre un tema de la web y ejecuta la extracción.
 
 ## Cambios PR3
 
-### Adaptador DOM específico para PeruTops
+### Adaptador DOM específico para la web
 
-- Añade `shared/perutops-parser.js`, separado del coordinador de extracción.
+- Añade `shared/la web-parser.js`, separado del coordinador de extracción.
 - Reconoce adjuntos en miniatura: `.message-attachments`, `.attachmentList`, `.file.file--linked`, `.file-preview`, `.u-anchorTarget#attachment-{id}`.
-- Trata `img.src` de `media.perutops.com/attachments/...` como miniatura, no como recurso original.
+- Trata `img.src` de `media.la web.com/attachments/...` como miniatura, no como recurso original.
 - Conserva la URL de la página del adjunto (`a.file-preview[href]`) y resuelve la URL original mediante una solicitud autenticada al mismo origen.
 - Usa el ID numérico del adjunto como clave estable para deduplicar aunque la URL resuelta cambie.
 - Reconoce imágenes dentro de citas XenForo (`blockquote.bbCodeBlock--quote`) y enlaces externos `a.link--external > img.bbImage`.
@@ -42,7 +42,7 @@ Extensión Chrome Manifest V3 para extraer recursos multimedia del **tema activo
 
 ### Integridad y límites
 
-- La identidad y paginación siguen limitadas al mismo tema activo de PeruTops.
+- La identidad y paginación siguen limitadas al mismo tema activo de la web.
 - No se reintroduce un límite fijo de 200 páginas.
 - La concurrencia de resolución de adjuntos se mantiene en cuatro solicitudes.
 - No se descargan ni almacenan los archivos multimedia completos; se guardan metadatos y URLs.
@@ -58,7 +58,7 @@ npm run check
 
 Las pruebas cubren identidad de tema, clasificación de URLs, IDs de adjuntos, selección de limpieza de historial, estado de trabajos, manifiesto e importaciones. Los tests no simulan un navegador DOM completo ni reemplazan la validación manual de Chrome.
 
-## Validación manual obligatoria en PeruTops
+## Validación manual obligatoria en la web
 
 1. Abrir un tema con adjuntos en miniatura como el fragmento compartido: verificar que aparezcan en galería y que la URL original no sea la miniatura de 65×140.
 2. Abrir una cita con `blockquote.bbCodeBlock--quote` e imágenes `a.link--external > img.bbImage`: verificar miniatura, URL original, autor citado y enlace al post citado.
@@ -70,8 +70,8 @@ Las pruebas cubren identidad de tema, clasificación de URLs, IDs de adjuntos, s
 
 ## Limitaciones conocidas / trabajo pendiente
 
-- La URL original de los adjuntos depende de la respuesta real de la página de adjunto en PeruTops. Si el servidor devuelve un formato HTML distinto al previsto, la miniatura se conserva y habrá que ajustar el resolver con esa respuesta real.
-- No se ha ejecutado esta versión en una sesión real de Chrome conectada a PeruTops; las pruebas automatizadas no certifican el DOM real ni cookies, permisos o anti-hotlink.
+- La URL original de los adjuntos depende de la respuesta real de la página de adjunto en la web. Si el servidor devuelve un formato HTML distinto al previsto, la miniatura se conserva y habrá que ajustar el resolver con esa respuesta real.
+- No se ha ejecutado esta versión en una sesión real de Chrome conectada a la web; las pruebas automatizadas no certifican el DOM real ni cookies, permisos o anti-hotlink.
 - La cola global entre pestañas aún no está implementada. La afirmación anterior de que dos temas se ponen en cola no está respaldada por el código PR2 inspeccionado: esta versión mantiene sesiones aisladas, pero puede permitir que dos pestañas intenten extraer simultáneamente. Debe corregirse en PR2.1 antes de considerar completa la gestión de trabajos.
 - La extracción no se reanuda automáticamente después de cerrar/recargar la pestaña. Los resultados parciales sí se conservan.
 - Cerrar la galería no borra la extracción: se conserva para «Extracciones recientes». «Limpiar» sí elimina recursos y registro, por lo que esa extracción deja de aparecer en recientes.
@@ -80,6 +80,6 @@ Las pruebas cubren identidad de tema, clasificación de URLs, IDs de adjuntos, s
 
 ## Estructura añadida
 
-- `shared/perutops-parser.js`: parser DOM específico para el marcado observado en PeruTops.
-- `tests/perutops-parser.test.js`: pruebas de clasificación y claves de adjuntos.
-- `tests/fixtures/perutops/README.md`: contrato DOM documentado a partir de los fragmentos facilitados.
+- `shared/la web-parser.js`: parser DOM específico para el marcado observado en la web.
+- `tests/la web-parser.test.js`: pruebas de clasificación y claves de adjuntos.
+- `tests/fixtures/la web/README.md`: contrato DOM documentado a partir de los fragmentos facilitados.
