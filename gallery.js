@@ -4,8 +4,9 @@ const status = document.getElementById("status");
 let data = { items: [], pagesScanned: 0, sourceUrl: "", totalItems: 0, offset: 0, limit: 100, hasMore: false };
 const sessionId = new URLSearchParams(location.search).get("sessionId") || "";
 let activeFilter = "all";
-let viewerItems = [];
-let viewerIndex = 0;
+let renderObserver = null;
+let renderedCount = 0;
+const RENDER_BATCH_SIZE = 30;
 
 const labels = { image: "Imagen", video: "Video", embed: "Embed", telegram: "Telegram", link: "Enlace", attachment: "Adjunto" };
 const make = (tag, cls, text) => { const el = document.createElement(tag); if (cls) el.className = cls; if (text !== undefined) el.textContent = text; return el; };
@@ -15,131 +16,38 @@ function isVideo(item) { return item.type === "video"; }
 function resourceUrl(item) { return safeUrl(item.playUrl) || safeUrl(item.url); }
 function externalLink(url, label) { const a = make("a", "", label); a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer"; return a; }
 
-function ensureViewer() {
-  let dialog = document.getElementById("fancyboxViewer");
-  if (dialog) return dialog;
-  dialog = make("dialog", "fancybox-viewer");
-  dialog.id = "fancyboxViewer";
-  dialog.innerHTML = `
-    <div class="fb-toolbar"><div class="fb-counter" id="fbCounter"></div><button type="button" class="fb-close" id="fbClose" aria-label="Cerrar">×</button></div>
-    <button type="button" class="fb-arrow fb-prev" id="fbPrev" aria-label="Anterior">‹</button>
-    <div class="fb-stage" id="fbStage"></div>
-    <button type="button" class="fb-arrow fb-next" id="fbNext" aria-label="Siguiente">›</button>
-    <div class="fb-caption" id="fbCaption"></div>
-    <div class="fb-thumbs" id="fbThumbs"></div>`;
-  document.body.append(dialog);
-  dialog.addEventListener("click", event => {
-    // Cierra al pulsar cualquier zona vacía del fondo oscuro; los medios,
-    // miniaturas y controles conservan su propia interacción.
-    const protectedArea = event.target.closest(".fb-stage img,.fb-stage video,.fb-thumbs,.fb-toolbar button,.fb-arrow");
-    if (!protectedArea) closeViewer();
-  });
-  dialog.querySelector("#fbClose").addEventListener("click", closeViewer);
-  dialog.querySelector("#fbPrev").addEventListener("click", () => moveViewer(-1));
-  dialog.querySelector("#fbNext").addEventListener("click", () => moveViewer(1));
-  return dialog;
+function openMediaViewer(item, trigger) {
+  if (!window.ExtMediaViewer || (!isImage(item) && !isVideo(item))) return;
+  const index = data.items.indexOf(item);
+  if (index < 0) return;
+  window.ExtMediaViewer.open(data.items, index, item.type, trigger);
 }
-function openViewer(item) {
-  // En las categorías Imagen y Video el visor navega solo por ese tipo.
-  // En "Todos" se mantiene la navegación combinada.
-  const mediaType = activeFilter === "image" || activeFilter === "video" ? activeFilter : null;
-  viewerItems = data.items.filter(x => (isImage(x) || isVideo(x)) && (!mediaType || x.type === mediaType));
-  viewerIndex = Math.max(0, viewerItems.findIndex(x => x.url === item.url));
-  ensureViewer();
-  renderViewerItem();
-  const dialog = document.getElementById("fancyboxViewer");
-  if (!dialog.open) dialog.showModal();
-  document.body.classList.add("viewer-open");
-}
-function closeViewer() {
-  const dialog = document.getElementById("fancyboxViewer");
-  if (dialog?.open) dialog.close();
-  document.body.classList.remove("viewer-open");
-  document.getElementById("fbStage")?.replaceChildren();
-}
-function moveViewer(delta) {
-  if (!viewerItems.length) return;
-  viewerIndex = (viewerIndex + delta + viewerItems.length) % viewerItems.length;
-  renderViewerItem();
-}
-function renderViewerItem() {
-  const item = viewerItems[viewerIndex];
-  if (!item) return;
-  const stage = document.getElementById("fbStage");
-  const thumbs = document.getElementById("fbThumbs");
-  stage.replaceChildren();
-  if (isVideo(item)) {
-    const video = document.createElement("video");
-    video.src = resourceUrl(item);
-    video.controls = true;
-    video.autoplay = false;
-    video.playsInline = true;
-    video.preload = "metadata";
-    stage.append(video);
-  } else {
-    const img = document.createElement("img");
-    // El visor abre primero el recurso original; la miniatura solo es fallback.
-    img.src = safeUrl(item.url) || safeUrl(item.preview);
-    img.alt = item.title || "Imagen";
-    img.decoding = "async";
-    img.draggable = false;
-    if (item.fallbackUrl && item.fallbackUrl !== img.src) {
-      img.addEventListener("error", () => {
-        if (img.dataset.fallbackTried) return;
-        img.dataset.fallbackTried = "1";
-        img.src = safeUrl(item.fallbackUrl || item.preview);
-      }, { once: true });
-    }
-    stage.append(img);
-  }
-  document.getElementById("fbCounter").textContent = `${viewerIndex + 1} / ${viewerItems.length}`;
-  document.getElementById("fbCaption").textContent = `${item.title || labels[item.type]}${item.author ? ` · ${item.author}` : ""}`;
-  document.getElementById("fbPrev").disabled = viewerItems.length < 2;
-  document.getElementById("fbNext").disabled = viewerItems.length < 2;
-  thumbs.replaceChildren();
-  viewerItems.forEach((entry, index) => {
-    const button = make("button", `fb-thumb${index === viewerIndex ? " active" : ""}`);
-    button.type = "button";
-    button.title = entry.title || labels[entry.type];
-    if (isImage(entry)) {
-      const img = document.createElement("img"); img.src = safeUrl(entry.preview) || safeUrl(entry.url); img.alt = "";
-      if (entry.fallbackUrl && entry.fallbackUrl !== img.src) img.addEventListener("error", () => { if (!img.dataset.fallbackTried) { img.dataset.fallbackTried = "1"; img.src = safeUrl(entry.fallbackUrl); } }, { once: true });
-      button.append(img);
-    } else button.append(make("span", "fb-video-thumb", "▶"));
-    button.addEventListener("click", () => { viewerIndex = index; renderViewerItem(); });
-    thumbs.append(button);
-  });
-  thumbs.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "center" });
-}
-document.addEventListener("keydown", event => {
-  const dialog = document.getElementById("fancyboxViewer");
-  if (!dialog?.open) return;
-  if (event.key === "Escape") closeViewer();
-  if (event.key === "ArrowLeft") moveViewer(-1);
-  if (event.key === "ArrowRight") moveViewer(1);
-});
 
 function createCard(item) {
   const card = make("article", "card");
   const preview = make("div", "preview");
   const url = resourceUrl(item);
-  if (!url) return card;
+  if (!url) { card.append(make("div", "placeholder", "URL no disponible")); return card; }
+
   if (isImage(item)) {
     const img = document.createElement("img");
-    img.src = safeUrl(item.preview) || safeUrl(item.url); img.alt = item.title || "Imagen"; img.loading = "lazy"; img.decoding = "async"; img.fetchPriority = "low";
+    img.src = safeUrl(item.preview) || safeUrl(item.fallbackUrl) || safeUrl(item.url);
+    img.alt = item.title || "Imagen"; img.loading = "lazy"; img.decoding = "async"; img.fetchPriority = "low";
     img.addEventListener("error", () => {
-      const fallback = safeUrl(item.fallbackUrl) || safeUrl(item.preview);
-      if (fallback && img.src !== fallback && !img.dataset.fallbackTried) {
-        img.dataset.fallbackTried = "1";
-        img.src = fallback;
-      } else preview.replaceChildren(make("div", "placeholder", "Vista previa no disponible"));
+      const fallback = safeUrl(item.fallbackUrl) || safeUrl(item.url);
+      if (fallback && img.src !== fallback && !img.dataset.fallbackTried) { img.dataset.fallbackTried = "1"; img.src = fallback; }
+      else preview.replaceChildren(make("div", "placeholder", "Vista previa no disponible"));
     });
-    img.addEventListener("click", () => openViewer(item)); preview.append(img);
+    img.addEventListener("click", event => openMediaViewer(item, event.currentTarget));
+    preview.append(img);
   } else if (isVideo(item)) {
-    const video = document.createElement("video"); video.src = url; video.controls = true; video.preload = "metadata"; video.playsInline = true;
-    video.addEventListener("click", event => { event.preventDefault(); openViewer(item); });
-    preview.append(video);
-    const expand = make("button", "expand-media", "Ver en pantalla completa"); expand.addEventListener("click", () => openViewer(item)); preview.append(expand);
+    const poster = safeUrl(item.preview) || safeUrl(item.fallbackUrl);
+    if (poster) {
+      const img = document.createElement("img"); img.src = poster; img.alt = item.title || "Video";
+      img.loading = "lazy"; img.decoding = "async"; img.fetchPriority = "low"; preview.append(img);
+    } else preview.append(make("div", "video-card-placeholder", "▶\nVIDEO"));
+    const expand = make("button", "expand-media", "▶ Reproducir video");
+    expand.type = "button"; expand.addEventListener("click", event => openMediaViewer(item, event.currentTarget)); preview.append(expand);
   } else preview.append(make("div", "placeholder", `${labels[item.type] || "Recurso"}\n${item.title || ""}`));
 
   const details = make("div", "details");
@@ -148,24 +56,41 @@ function createCard(item) {
   if (item.author) details.append(make("div", "meta", `Autor: ${item.author}`));
   if (item.isQuoted) details.append(make("div", "meta", `También aparece en una cita${item.quotedAuthor ? ` de ${item.quotedAuthor}` : ""}`));
   const actions = make("div", "card-actions");
-  actions.append(externalLink(url, "Abrir recurso"));
+  actions.append(externalLink(url, isVideo(item) ? "Abrir video" : "Abrir recurso"));
   if (item.sourcePage && safeUrl(item.sourcePage)) actions.append(externalLink(safeUrl(item.sourcePage), "Ir al mensaje"));
   if (item.quotedPostUrl && safeUrl(item.quotedPostUrl)) actions.append(externalLink(safeUrl(item.quotedPostUrl), "Ir al mensaje citado"));
-  const copy = make("button", "", "Copiar URL");
+  const copy = make("button", "", "Copiar URL"); copy.type = "button";
   copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(url); status.textContent = "URL copiada."; } catch { status.textContent = "No se pudo copiar la URL."; } });
   actions.append(copy); details.append(actions); card.append(preview, details); return card;
 }
 
+function stopProgressiveRender() {
+  renderObserver?.disconnect(); renderObserver = null; renderedCount = 0;
+}
+function appendNextBatch(filtered, sentinel) {
+  const fragment = document.createDocumentFragment();
+  const end = Math.min(renderedCount + RENDER_BATCH_SIZE, filtered.length);
+  for (; renderedCount < end; renderedCount++) fragment.append(createCard(filtered[renderedCount]));
+  sentinel.before(fragment);
+  if (renderedCount >= filtered.length) { sentinel.remove(); renderObserver?.disconnect(); renderObserver = null; }
+}
+
 function render() {
+  stopProgressiveRender();
   const filtered = data.items.filter(item => activeFilter === "all" || item.type === activeFilter);
   gallery.replaceChildren();
   if (!filtered.length) {
     const msg = data.error ? `La extracción no pudo completarse: ${data.error}` : data.items.length ? "No hay recursos en esta categoría." : data.pagesFailed ? `No se pudieron leer ${data.pagesFailed} páginas del tema.` : "No se encontraron recursos. Comprueba que el tema esté cargado y que la extensión tenga acceso.";
     gallery.append(make("div", "empty", msg));
   } else {
-    const fragment = document.createDocumentFragment();
-    filtered.forEach(item => fragment.append(createCard(item)));
-    gallery.append(fragment);
+    const sentinel = make("div", "render-sentinel", "Desplázate para cargar más recursos…");
+    gallery.append(sentinel); appendNextBatch(filtered, sentinel);
+    if (sentinel.isConnected) {
+      renderObserver = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) appendNextBatch(filtered, sentinel);
+      }, { rootMargin: "800px" });
+      renderObserver.observe(sentinel);
+    }
   }
   const counts = { all: data.items.length };
   Object.keys(labels).forEach(type => counts[type] = data.items.filter(item => item.type === type).length);
@@ -199,39 +124,61 @@ document.getElementById("filters")?.addEventListener("click", event => {
   render();
 });
 function downloadFile(filename, content, type) {
-  const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  const blob = content instanceof Blob ? content : new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement("a");
   a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-async function fetchAllItems() {
-  const all = [];
-  for (let offset = 0; offset < data.totalItems; offset += 100) {
+async function forEachExportPage(visitor) {
+  const total = Math.max(0, Number(data.totalItems) || 0);
+  for (let offset = 0; offset < total; offset += 100) {
     const page = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset, limit: 100 });
-    if (!page?.items) break;
-    all.push(...page.items);
+    if (!page || !Array.isArray(page.items)) throw new Error("La exportación se interrumpió: no se pudo leer una página del catálogo.");
+    await visitor(page.items, offset);
+    if (!page.items.length) break;
   }
-  return all;
+}
+function exportUrlValue(field, value) {
+  if (["url", "playUrl", "sourcePage"].includes(field)) return safeUrl(value);
+  return value;
 }
 document.getElementById("exportJson")?.addEventListener("click", async () => {
-  status.textContent = "Preparando exportación completa…";
-  const items = await fetchAllItems();
-  downloadFile("extractor-multimedia.json", JSON.stringify({ ...data, items }, null, 2), "application/json;charset=utf-8");
-  status.textContent = `${items.length} recursos exportados.`;
+  try {
+    status.textContent = "Preparando exportación completa…";
+    const metadata = { ...data }; delete metadata.items;
+    metadata.offset = 0; metadata.limit = Math.max(100, Number(data.totalItems) || 0); metadata.hasMore = false;
+    const parts = [JSON.stringify(metadata).replace(/}$/, ',"items":[')];
+    let first = true, count = 0;
+    await forEachExportPage(items => {
+      if (items.length) { parts.push((first ? "" : ",") + items.map(item => JSON.stringify(item)).join(",")); first = false; count += items.length; }
+    });
+    parts.push("]}");
+    downloadFile("extractor-multimedia.json", new Blob(parts, { type: "application/json;charset=utf-8" }), "application/json;charset=utf-8");
+    status.textContent = `${count} recursos exportados.`;
+  } catch (error) { status.textContent = error.message || "No se pudo exportar el catálogo."; }
 });
 document.getElementById("exportCsv")?.addEventListener("click", async () => {
-  status.textContent = "Preparando exportación completa…";
-  const items = await fetchAllItems();
-  const fields = ["type", "title", "url", "playUrl", "sourcePage", "author", "isQuoted", "quotedAuthor"];
-  const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const csv = [fields.join(","), ...items.map(item => fields.map(field => quote(item[field])).join(","))].join("\r\n");
-  downloadFile("extractor-multimedia.csv", "\uFEFF" + csv, "text/csv;charset=utf-8");
-  status.textContent = `${items.length} recursos exportados.`;
+  try {
+    status.textContent = "Preparando exportación completa…";
+    const fields = ["type", "title", "url", "playUrl", "sourcePage", "author", "isQuoted", "quotedAuthor"];
+    const parts = ["\uFEFF" + window.ExtMediaCsv.row(fields) + "\r\n"];
+    let count = 0;
+    await forEachExportPage(items => {
+      if (!items.length) return;
+      parts.push(items.map(item => window.ExtMediaCsv.row(fields.map(field => exportUrlValue(field, item[field])))).join("\r\n") + "\r\n");
+      count += items.length;
+    });
+    downloadFile("extractor-multimedia.csv", new Blob(parts, { type: "text/csv;charset=utf-8" }), "text/csv;charset=utf-8");
+    status.textContent = `${count} recursos exportados.`;
+  } catch (error) { status.textContent = error.message || "No se pudo exportar el catálogo."; }
 });
 document.getElementById("copyUrls")?.addEventListener("click", async () => {
-  const items = await fetchAllItems();
-  const urls = [...new Set(items.map(item => item.playUrl || item.url).filter(Boolean))];
-  try { await navigator.clipboard.writeText(urls.join("\n")); status.textContent = `${urls.length} URL copiadas.`; } catch { status.textContent = "No se pudo copiar la URL."; }
+  try {
+    const urls = new Set();
+    await forEachExportPage(items => items.forEach(item => { const url = safeUrl(item.playUrl) || safeUrl(item.url); if (url) urls.add(url); }));
+    await navigator.clipboard.writeText([...urls].join("\n")); status.textContent = `${urls.size} URL copiadas.`;
+  } catch (error) { status.textContent = error.message || "No se pudo copiar al portapapeles."; }
 });
 async function loadPage(offset) {
+  window.ExtMediaViewer?.close();
   const page = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset, limit: 100 });
   if (!page) throw new Error("Los resultados de esta sesión ya no están disponibles.");
   data = page;
@@ -242,6 +189,7 @@ document.getElementById("prevPage")?.addEventListener("click", () => loadPage(Ma
 document.getElementById("nextPage")?.addEventListener("click", () => loadPage(data.offset + data.limit).catch(error => status.textContent = error.message));
 document.getElementById("clear")?.addEventListener("click", async () => {
   if (!confirm("¿Eliminar definitivamente los recursos y el registro de esta extracción? Ya no aparecerá en Extracciones recientes.")) return;
+  window.ExtMediaViewer?.close();
   const result = await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId });
   if (result?.ok === false) { status.textContent = result.error || "No se pudieron eliminar los resultados."; return; }
   data = { items: [], pagesScanned: 0, sourceUrl: "", totalItems: 0, offset: 0, limit: 100, hasMore: false };

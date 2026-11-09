@@ -107,10 +107,11 @@
     queued.add(queue[0]);
     const pageErrors = [];
     const persistedKeys = new Set();
+    let fatalStorageError = "";
     let pagesScanned = 0;
     let itemsFound = 0;
 
-    while (queue.length) {
+    while (queue.length && !fatalStorageError) {
       const pageUrl = queue.shift();
       if (!pageUrl || visited.has(pageUrl)) continue;
       visited.add(pageUrl);
@@ -160,7 +161,9 @@
         });
         pageItems.clear();
       } catch (error) {
-        pageErrors.push({ url: pageUrl, message: error?.message || "Error desconocido" });
+        const message = error?.message || "Error desconocido";
+        pageErrors.push({ url: pageUrl, message });
+        if (error?.name === "QuotaExceededError" || /almacenamiento local.*lleno|cuota/i.test(message)) fatalStorageError = message;
         console.warn("Ext-Media: no se pudo procesar la página", pageUrl, error);
         await sendToBackground({
           type: "EXTRACTOR_PROGRESS", sessionId: activeSessionId, threadId: activeThread.threadId,
@@ -172,7 +175,8 @@
 
     return {
       items: [], pagesScanned, pagesFailed: pageErrors.length, pageErrors,
-      complete: pageErrors.length === 0, sessionId: activeSessionId, sourceUrl: location.href,
+      complete: pageErrors.length === 0 && !fatalStorageError, error: fatalStorageError,
+      sessionId: activeSessionId, sourceUrl: location.href,
       threadId: activeThread.threadId, threadUrl: activeThread.threadUrl
     };
   }

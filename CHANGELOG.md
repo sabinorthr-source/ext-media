@@ -1,31 +1,26 @@
 # Changelog
 
-## 1.5.1 — PR3.1: URL original, galería y retención local
+## 1.6.0 — PR4 + PR5
 
-- Diferencia las páginas internas de adjuntos del foro de los enlaces directos del CDN.
-- Reconoce URLs de imagen `.data` mediante el parámetro `a` y conserva íntegra la query con token.
-- El visor abre primero el original y usa la miniatura como fallback; las tarjetas siguen mostrando previews.
-- Añade `content-visibility`, decodificación asíncrona, prioridad baja y botón flotante «Volver al inicio».
-- «Limpiar» informa que elimina también la entrada de «Extracciones recientes».
-- Añade acción para eliminar extracciones terminadas desde el popup.
-- La limpieza automática nunca expulsa trabajos activos; retiene hasta 20 sesiones terminadas recientes y elimina las terminadas de más de 14 días.
-- Añade pruebas para URL `.data`, origen del adjunto y política de retención.
+### PR4 — Galería y visor
+- Un único diálogo accesible `mediaViewer`; se elimina el visor dinámico heredado.
+- Prototipo local de lightbox inspirado en GLightbox, sin dependencia externa ni CDN.
+- Navegación estrictamente separada: imágenes solo recorren imágenes; videos solo recorren videos.
+- Tira de miniaturas, zoom básico, fullscreen nativo, teclado, gestos táctiles y retorno del foco.
+- Videos se pausan y se descargan del DOM al cambiar de elemento o cerrar el visor.
+- Tarjetas de video usan poster/miniatura y no crean reproductores de video en cada tarjeta.
+- Renderizado progresivo de 30 tarjetas dentro de la página de 100 resultados.
 
-## 1.5.0 — PR3: parser PeruTops y memoria acotada
+### PR5 — Pruebas y endurecimiento
+- CSV neutraliza fórmulas de hoja de cálculo y escapa comillas.
+- Exportaciones JSON/CSV y copia de URLs recorren páginas de 100 sin reunir todo el catálogo en un array de objetos.
+- URLs de recursos exportadas se limitan a HTTP/HTTPS.
+- Ante cuota excedida, intenta limpiar solo sesiones terminadas antiguas/sobrantes y reintenta el lote una vez.
+- Si el almacenamiento sigue lleno, detiene el rastreo, conserva resultados guardados y marca la extracción como parcial.
+- Se añaden pruebas de regresión de visor, CSV, temas extensos, lotes, sesión autenticada, memoria de página y cuota.
 
-- Extrae adjuntos miniatura desde `.file-preview`, conserva la página del adjunto y resuelve el recurso original.
-- Identifica adjuntos por ID XenForo, independiente de la URL de la miniatura.
-- Extrae imágenes externas citadas usando el `href` como original y `src`/`data-url` como preview.
-- Conserva autor, post citado y orígenes de aparición.
-- Añade parser PeruTops separado del coordinador de `content.js`.
-- Procesa y persiste por página; elimina el `Map` global que retenía todos los recursos durante el rastreo.
-- Añade lectura paginada de IndexedDB y navegación de galería en lotes de 100.
-- Exportación completa bajo demanda para JSON/CSV y copia de URLs.
-- Añade pruebas unitarias de clasificación de recursos e identidad de adjuntos.
-
-### Pendiente
-
-- Validación en Chrome con DOM vivo de PeruTops, especialmente acceso real al original del adjunto.
-- Cola global real entre pestañas (PR2.1).
-- Reanudación automática de trabajos interrumpidos.
-- Pruebas de carga reales con miles de recursos y temas extensos.
+### Validación pendiente en Chrome
+- Reproducción de videos reales y protegidos con sesión iniciada.
+- Fullscreen y gestos en Windows/Android.
+- Carga de imágenes originales con token y CDN de PeruTops.
+- Prueba de cuota real de IndexedDB y catálogos de varios miles de recursos.

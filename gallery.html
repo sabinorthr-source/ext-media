@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ext-Media · Galería del tema</title>
   <link rel="stylesheet" href="gallery.css">
+  <link rel="stylesheet" href="viewers/media-viewer.css">
 </head>
 <body>
   <header class="topbar">
@@ -40,6 +41,23 @@
   <main id="gallery" class="gallery"></main>
   <button id="scrollTop" class="scroll-top" type="button" aria-label="Volver al inicio" title="Volver al inicio">↑</button>
 
+  <dialog id="mediaViewer" class="media-viewer" aria-label="Visor multimedia">
+    <header class="viewer-toolbar">
+      <div class="viewer-heading"><span id="viewerKind" class="viewer-kind">IMÁGENES</span><span id="viewerCounter" class="viewer-counter">0 / 0</span></div>
+      <div class="viewer-tools">
+        <button id="viewerZoom" type="button" title="Ampliar imagen" aria-label="Ampliar imagen">＋</button>
+        <button id="viewerFullscreen" type="button" title="Pantalla completa" aria-label="Pantalla completa">⛶</button>
+        <button id="viewerClose" type="button" class="viewer-close" title="Cerrar" aria-label="Cerrar visor">×</button>
+      </div>
+    </header>
+    <button id="viewerPrev" class="viewer-arrow viewer-prev" type="button" aria-label="Anterior">‹</button>
+    <section id="viewerStage" class="viewer-stage" aria-live="off"></section>
+    <button id="viewerNext" class="viewer-arrow viewer-next" type="button" aria-label="Siguiente">›</button>
+    <footer class="viewer-footer"><div id="viewerCaption" class="viewer-caption"></div><div id="viewerThumbs" class="viewer-thumbs" aria-label="Miniaturas"></div></footer>
+  </dialog>
+
+  <script src="shared/csv-export.js"></script>
+  <script src="viewers/media-viewer.js"></script>
   <script src="gallery.js"></script>
 </body>
 </html>
