@@ -1,0 +1,448 @@
+Este es una imagen que esta en miniatura:
+<section class="message-attachments">
+			<h4 class="block-textHeader">Archivos adjuntos</h4>
+			<ul class="attachmentList">
+				
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175331"></a>
+		
+			
+	
+		
+		
+
+		
+			
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0463-png.2175331/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0463.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;" data-blank-handler="true">
+				<img src="https://media.perutops.com/attachments/2108/2108598-813748f2ad8f775072852865dc131e48.jpg?hash=gTdI8q2Pd1" srcset="" alt="IMG_0463.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0463.png">IMG_0463.png</span>
+				<div class="file-meta">
+					162,2 KB
+					
+					· Visitas: 24
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175332"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0462-png.2175332/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0462.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108599-c916cb7f7090d9ed9e1ce5d5e6bbb0d9.jpg?hash=yRbLf3CQ2e" srcset="" alt="IMG_0462.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0462.png">IMG_0462.png</span>
+				<div class="file-meta">
+					156 KB
+					
+					· Visitas: 19
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175333"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0461-png.2175333/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0461.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108600-f1a4e5c7c65e8145749c78525748f665.jpg?hash=8aTlx8ZegU" srcset="" alt="IMG_0461.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0461.png">IMG_0461.png</span>
+				<div class="file-meta">
+					178,5 KB
+					
+					· Visitas: 19
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175334"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0460-png.2175334/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0460.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108601-a3c3320d0ba64723cfd18e4913f9e286.jpg?hash=o8MyDQumRy" srcset="" alt="IMG_0460.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0460.png">IMG_0460.png</span>
+				<div class="file-meta">
+					168,6 KB
+					
+					· Visitas: 18
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175335"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0459-png.2175335/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0459.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108602-8674184a9a7238c29c91e8d7b3ccebad.jpg?hash=hnQYSppyOM" srcset="" alt="IMG_0459.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0459.png">IMG_0459.png</span>
+				<div class="file-meta">
+					169,5 KB
+					
+					· Visitas: 18
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175336"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0458-png.2175336/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0458.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108603-f8b189571c9e6176f6e16ae381556c01.jpg?hash=-LGJVxyeYX" srcset="" alt="IMG_0458.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0458.png">IMG_0458.png</span>
+				<div class="file-meta">
+					173,1 KB
+					
+					· Visitas: 20
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175337"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0457-png.2175337/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0457.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108604-62cc99ea7dac957a4b0938d11169c5cf.jpg?hash=YsyZ6n2slX" srcset="" alt="IMG_0457.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0457.png">IMG_0457.png</span>
+				<div class="file-meta">
+					174,5 KB
+					
+					· Visitas: 20
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+						
+	<li class="file file--linked">
+		<a class="u-anchorTarget" id="attachment-2175341"></a>
+		
+			
+	
+		
+		
+
+		
+		
+	
+
+
+			
+<a class="file-preview js-lbImage" data-lb-sidebar-href="" data-lb-caption-extra-html="" href="/foro-relax/attachments/img_0456-png.2175341/" data-type="image" target="_blank" data-fancybox="lb-thread-500035" style="cursor: pointer;" data-caption="&lt;h4&gt;IMG_0456.png&lt;/h4&gt;&lt;p&gt;&lt;a href=&quot;https:&amp;#x2F;&amp;#x2F;perutops.com&amp;#x2F;foro-relax&amp;#x2F;threads&amp;#x2F;yuli-lobo-venezolana.500035&amp;#x2F;#post-5323503&quot; class=&quot;js-lightboxCloser&quot;&gt;jeff19 · 26 Ago 2023 a las 22:42&lt;/a&gt;&lt;/p&gt;">
+				<img src="https://media.perutops.com/attachments/2108/2108608-b70bde92d03261df6c3f32cc6ca1db10.jpg?hash=twvektAyYd" srcset="" alt="IMG_0456.png" width="65" height="140" loading="lazy">
+			</a>
+		
+
+		<div class="file-content">
+			<div class="file-info">
+				<span class="file-name" title="IMG_0456.png">IMG_0456.png</span>
+				<div class="file-meta">
+					170,5 KB
+					
+					· Visitas: 19
+					
+				</div>
+			</div>
+		</div>
+	</li>
+
+					
+				
+			</ul>
+		</section>
+
+Así se ve cuando se abre:
+<div class="fancybox__slide has-image has-caption is-selected fancybox__slide--video can-zoom_in is-done" aria-labelledby="fancybox__caption_2_0" data-index="0"><div class="fancybox__content" style="width: 249.6px; height: 540px; transform: matrix(1, 0, 0, 1, 0, 0);"><img src="/foro-relax/attachments/img_0463-png.2175331/" alt="IMG_0463.pngjeff19 · 26 Ago 2023 a las 22:42" draggable="false" fetchpriority="high" class="fancybox-image"></div><div class="fancybox__caption" id="fancybox__caption_2_0"><h4>IMG_0463.png</h4><p><a href="https://perutops.com/foro-relax/threads/yuli-lobo-venezolana.500035/#post-5323503" class="js-lightboxCloser">jeff19 · 26 Ago 2023 a las 22:42</a></p></div></div>
+
+---
+
+Así es como se ve una cita:
+<div itemprop="text">
+				
+					
+	
+
+		
+			
+		
+
+		
+	
+
+<div class="bbWrapper"><blockquote data-attributes="member: 250365" data-quote="emanuelo" data-source="post: 5788416" class="bbCodeBlock bbCodeBlock--expandable bbCodeBlock--quote js-expandWatch is-expandable is-expanded" style="">
+	
+		<div class="bbCodeBlock-title">
+			
+				<a href="/foro-relax/goto/post?id=5788416" class="bbCodeBlock-sourceJump" rel="nofollow" data-xf-click="attribution" data-content-selector="#post-5788416">emanuelo dijo:</a>
+			
+		</div>
+	
+	<div class="bbCodeBlock-content">
+		
+		<div class="bbCodeBlock-expandContent js-expandContent ">
+			<a href="https://imagetwist.com/rygf01ovnfhe/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__1_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/rygf01ovnfhe.jpg" data-url="https://s10.imagetwist.com/th/71030/rygf01ovnfhe.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/mu401fjdc2yt/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__2_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/mu401fjdc2yt.jpg" data-url="https://s10.imagetwist.com/th/71030/mu401fjdc2yt.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/md6x44pfxpj5/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__3_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/md6x44pfxpj5.jpg" data-url="https://s10.imagetwist.com/th/71030/md6x44pfxpj5.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a><br>
+<a href="https://imagetwist.com/si2q3wokhato/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__4_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/si2q3wokhato.jpg" data-url="https://s10.imagetwist.com/th/71030/si2q3wokhato.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/tbl2qtcbn55b/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__5_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/tbl2qtcbn55b.jpg" data-url="https://s10.imagetwist.com/th/71030/tbl2qtcbn55b.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/0ij45m3q2bj9/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__6_.jpg" target="_blank" class="link link--external" rel="nofollow ugc noopener"><img src="https://s10.imagetwist.com/th/71030/0ij45m3q2bj9.jpg" data-url="https://s10.imagetwist.com/th/71030/0ij45m3q2bj9.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a>
+		</div>
+		<div class="bbCodeBlock-expandLink js-expandLink"><a role="button" tabindex="0">Haz clic para expandir...</a></div>
+	</div>
+</blockquote>donde puedo ver esoa videos amigo?</div>
+
+	
+
+		
+			
+		
+
+		
+	
+
+				
+			</div>
+
+Asi se ve el mensaje original que cita:
+<div class="message-content js-messageContent">
+							
+
+								
+									
+	
+	
+	
+
+								
+
+								
+									
+	
+
+	<div class="message-userContent lbContainer js-lbContainer " data-lb-id="post-5788416" data-lb-caption-desc="emanuelo · 26 Jul 2025 a las 21:57">
+
+		
+
+		<article class="message-body js-selectToQuote">
+
+			
+				
+			
+
+			<div>
+				
+					
+	
+
+		
+			
+		
+
+		
+	
+
+<div class="bbWrapper"><a href="https://imagetwist.com/rygf01ovnfhe/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__1_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/rygf01ovnfhe.jpg" data-url="https://s10.imagetwist.com/th/71030/rygf01ovnfhe.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/mu401fjdc2yt/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__2_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/mu401fjdc2yt.jpg" data-url="https://s10.imagetwist.com/th/71030/mu401fjdc2yt.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/md6x44pfxpj5/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__3_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/md6x44pfxpj5.jpg" data-url="https://s10.imagetwist.com/th/71030/md6x44pfxpj5.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a><br>
+<a href="https://imagetwist.com/si2q3wokhato/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__4_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/si2q3wokhato.jpg" data-url="https://s10.imagetwist.com/th/71030/si2q3wokhato.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/tbl2qtcbn55b/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__5_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/tbl2qtcbn55b.jpg" data-url="https://s10.imagetwist.com/th/71030/tbl2qtcbn55b.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a> <a href="https://imagetwist.com/0ij45m3q2bj9/yuli-lobo-potazo-en-hilo-show-xxx-discoteca-santa-anita-saocco__6_.jpg" target="_blank" class="link link--external" rel="noopener"><img src="https://s10.imagetwist.com/th/71030/0ij45m3q2bj9.jpg" data-url="https://s10.imagetwist.com/th/71030/0ij45m3q2bj9.jpg" class="bbImage " loading="lazy" style="" width="" height=""></a></div>
+
+	
+
+		
+			
+		
+
+		
+	
+
+				
+			</div>
+
+			
+<div class="js-selectToQuoteEnd">&nbsp;</div>
+			
+				
+			
+		</article>
+
+		
+
+		
+	</div>
+
+								
+
+								
+					
+									
+	
+
+	
+
+								
+
+								
+									
+	
+
+		
+			
+		
+
+		
+	
+
+
+	
+		
+			<aside class="message-signature">
+			
+				<div class="bbWrapper">He encontrado mi lugar en el mundo.</div>
+			
+			</aside>
+		
+	
+
+
+	
+
+		
+			
+		
+
+		
+	
+
+								
+
+							
+							</div>
+
+
+
+
