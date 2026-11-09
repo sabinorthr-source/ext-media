@@ -2,8 +2,10 @@
   if (window.__extractorMultimediaInstalled) return;
   window.__extractorMultimediaInstalled = true;
 
-  const MAX_PAGES = 200;
+  const threadIdentity = globalThis.ExtMediaThreadIdentity;
+  if (!threadIdentity) throw new Error("No se cargó el módulo de identidad de tema.");
   let running = false;
+  let activeSessionId = "";
 
   const absolute = (value, base) => {
     if (!value) return "";
@@ -38,21 +40,27 @@
     if (!old) { map.set(key, item); return; }
     const rank = { ui: 0, link: 1, attachment: 2, embed: 3, telegram: 3, image: 4, video: 5 };
     if ((rank[item.type] || 0) > (rank[old.type] || 0)) old.type = item.type;
-    for (const field of ["title", "author", "sourcePage", "preview", "fallbackUrl", "attachmentPage", "playUrl", "mimeType"]) {
+    for (const field of ["title", "author", "sourcePage", "preview", "fallbackUrl", "attachmentPage", "playUrl", "mimeType", "quotedAuthor", "quotedPostUrl"]) {
       if ((!old[field] || old[field] === "Adjunto") && item[field]) old[field] = item[field];
     }
+    if (item.isQuoted) old.isQuoted = true;
   }
 
+  const activeThread = threadIdentity.getThreadIdentity(location.href);
+  if (!activeThread) console.warn("Ext-Media: la pestaña activa no corresponde a un tema válido de PeruTops.");
+
   function threadPageUrl(raw, base) {
-    const full = absolute(raw, base);
-    if (!full) return "";
-    try {
-      const u = new URL(full);
-      if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return "";
-      if (!/\/threads\//i.test(u.pathname) || /\/posts\/|\/attachments\//i.test(u.pathname)) return "";
-      u.hash = "";
-      return u.href;
-    } catch { return ""; }
+    if (!activeThread) return "";
+    return threadIdentity.normalizeThreadPage(raw, activeThread.threadUrl, base || location.href);
+  }
+
+  function quoteContext(element, pageUrl) {
+    const quote = element.closest(".bbCodeBlock--quote, blockquote.bbCodeBlock, blockquote");
+    if (!quote) return { isQuoted: false, quotedAuthor: "", quotedPostUrl: "" };
+    const source = quote.querySelector(".bbCodeBlock-source a[href], .bbCodeBlock-title a[href], a.bbCodeBlock-sourceJump[href]");
+    const author = cleanText(source?.textContent || quote.querySelector(".bbCodeBlock-source")?.textContent);
+    const quotedPostUrl = source ? absolute(source.getAttribute("href"), pageUrl) : "";
+    return { isQuoted: true, quotedAuthor: author, quotedPostUrl };
   }
 
   function getImageUrl(img, pageUrl) {
@@ -66,8 +74,10 @@
   }
 
   function extractDocument(doc, pageUrl, items, discoveredPages) {
-    const messages = doc.querySelectorAll(".message-cell--main, article.message, .message");
-    const roots = messages.length ? [...messages] : [doc.body];
+    // .message-cell--main is nested inside .message in XenForo 2.
+    const messages = doc.querySelectorAll(".message");
+    const roots = messages.length ? [...messages] : [...doc.querySelectorAll("article.message, .message-cell--main")];
+    if (!roots.length) roots.push(doc.body);
 
     for (const root of roots) {
       const messageLink = root.querySelector(".message-attribution-main a[href*='/threads/'], .message-attribution a[href*='/threads/']")?.href || pageUrl;
@@ -85,12 +95,13 @@
         const type = classifyUrl(url, `${title} ${wrapperTitle || ""}`);
         if (type === "ui" || !["image", "attachment"].includes(type)) continue;
         const attachment = img.closest("a[href*='/attachments/']") || img.closest(".bbImageWrapper")?.closest("a[href]");
+        const quoteInfo = quoteContext(img, pageUrl);
         addItem(items, {
           type: "image", url, title: title || "Imagen", sourcePage: messageLink,
           author, preview: url,
           fallbackUrl: absolute(img.getAttribute("src") || img.getAttribute("data-src"), pageUrl),
           attachmentPage: attachment ? absolute(attachment.getAttribute("href"), pageUrl) : "",
-          original: true
+          original: true, ...quoteInfo
         });
       }
 
@@ -101,14 +112,16 @@
         for (const raw of candidates) {
           const url = absolute(raw, pageUrl);
           if (!url) continue;
-          addItem(items, { type: "video", url, playUrl: url, title: cleanText(video.getAttribute("title") || video.getAttribute("data-filename")) || "Video", sourcePage: messageLink, author, preview: "" });
+          const quoteInfo = quoteContext(video, pageUrl);
+          addItem(items, { type: "video", url, playUrl: url, title: cleanText(video.getAttribute("title") || video.getAttribute("data-filename")) || "Video", sourcePage: messageLink, author, preview: "", ...quoteInfo });
         }
       }
 
       for (const frame of root.querySelectorAll("iframe")) {
         const url = absolute(frame.getAttribute("src") || frame.getAttribute("data-src"), pageUrl);
         if (!url || !/^https?:/i.test(url)) continue;
-        addItem(items, { type: "embed", url, title: cleanText(frame.title) || "Contenido incrustado", sourcePage: messageLink, author });
+        const quoteInfo = quoteContext(frame, pageUrl);
+        addItem(items, { type: "embed", url, title: cleanText(frame.title) || "Contenido incrustado", sourcePage: messageLink, author, ...quoteInfo });
       }
 
       // Adjuntos XenForo: el nombre del archivo permite saber si una página de adjunto es vídeo.
@@ -124,7 +137,8 @@
         if (/\/attachments\/[^/?#]*(?:-mp4|-webm|-mov|-m4v)(?:[./?#]|$)/i.test(url) || /\.(?:mp4|webm|mov|m4v)$/i.test(filename)) type = "video";
         if (/\.(?:jpe?g|png|gif|webp|avif|bmp)$/i.test(filename)) type = "image";
         if (type === "ui") continue;
-        addItem(items, { type: ["image", "video"].includes(type) ? type : "attachment", url, title: filename, sourcePage: messageLink, author, preview: "", attachmentPage: url });
+        const quoteInfo = quoteContext(a, pageUrl);
+        addItem(items, { type: ["image", "video"].includes(type) ? type : "attachment", url, title: filename, sourcePage: messageLink, author, preview: "", attachmentPage: url, ...quoteInfo });
       }
 
       // Enlaces visibles, excluyendo controles internos de XenForo.
@@ -144,7 +158,8 @@
         let type = classifyUrl(url, label);
         if (/\/attachments\/[^/?#]*(?:-mp4|-webm|-mov|-m4v)(?:[./?#]|$)/i.test(url)) type = "video";
         if (type === "ui") continue;
-        addItem(items, { type, url, title: label.slice(0, 300), sourcePage: messageLink, author, preview: type === "image" ? url : "", attachmentPage: /\/attachments\//i.test(url) ? url : "" });
+        const quoteInfo = quoteContext(a, pageUrl);
+        addItem(items, { type, url, title: label.slice(0, 300), sourcePage: messageLink, author, preview: type === "image" ? url : "", attachmentPage: /\/attachments\//i.test(url) ? url : "", ...quoteInfo });
       }
 
       // URLs escritas como texto en los mensajes.
@@ -159,78 +174,117 @@
           if (!url || !/^https?:/i.test(url)) continue;
           const type = classifyUrl(url, candidate);
           if (type === "ui") continue;
-          addItem(items, { type, url, title: candidate, sourcePage: messageLink, author, preview: type === "image" ? url : "" });
+          const quoteInfo = quoteContext(node.parentElement || root, pageUrl);
+          addItem(items, { type, url, title: candidate, sourcePage: messageLink, author, preview: type === "image" ? url : "", ...quoteInfo });
         }
       }
     }
 
-    for (const a of doc.querySelectorAll(".pageNav a[href],.pageNavWrapper a[href],.pagination a[href],a[href*='/page-']")) {
+    for (const a of doc.querySelectorAll(".pageNav a[href], .pageNavWrapper a[href], .pagination a[href], a[rel='next'][href]")) {
       const next = threadPageUrl(a.href, pageUrl);
       if (next) discoveredPages.add(next);
     }
   }
 
   async function resolveAttachmentMedia(items) {
-    for (const item of items.values()) {
-      if (!/\/attachments\//i.test(item.url)) continue;
-      if (item.type === "image") continue;
-      try {
-        const response = await fetch(item.url, { credentials: "include", redirect: "follow" });
-        if (!response.ok) continue;
-        const html = await response.text();
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const video = doc.querySelector("video");
-        const source = video?.querySelector("source");
-        const videoUrl = source?.getAttribute("src") || video?.getAttribute("src") ||
-          doc.querySelector('meta[property="og:video"],meta[property="og:video:url"],meta[name="twitter:player:stream"]')?.getAttribute("content");
-        if (videoUrl) {
-          const direct = absolute(videoUrl, response.url || item.url);
-          if (direct) { item.type = "video"; item.playUrl = direct; }
-        } else if (item.type === "attachment" && /\.(?:jpe?g|png|gif|webp|avif|bmp)/i.test(item.title)) {
-          const image = doc.querySelector(".bbImageWrapper[data-src],img.bbImage[src],img.bbImage[data-src]");
-          const raw = image?.closest(".bbImageWrapper")?.getAttribute("data-src") || image?.getAttribute("data-src") || image?.getAttribute("src");
-          const direct = absolute(raw, response.url || item.url);
-          if (direct) { item.type = "image"; item.url = direct; item.preview = direct; }
+    const pending = [...items.values()].filter(item => {
+      if (!/\/attachments\//i.test(item.url) || item.type === "image") return false;
+      try { return new URL(item.url).origin === location.origin; } catch { return false; }
+    });
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < pending.length) {
+        const item = pending[cursor++];
+        try {
+          const response = await fetch(item.url, { credentials: "include", redirect: "follow" });
+          if (!response.ok) continue;
+          const html = await response.text();
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const video = doc.querySelector("video");
+          const source = video?.querySelector("source");
+          const videoUrl = source?.getAttribute("src") || video?.getAttribute("src") ||
+            doc.querySelector('meta[property="og:video"],meta[property="og:video:url"],meta[name="twitter:player:stream"]')?.getAttribute("content");
+          if (videoUrl) {
+            const direct = absolute(videoUrl, response.url || item.url);
+            if (direct) { item.type = "video"; item.playUrl = direct; }
+          } else if (item.type === "attachment" && /\.(?:jpe?g|png|gif|webp|avif|bmp)/i.test(item.title)) {
+            const image = doc.querySelector(".bbImageWrapper[data-src],img.bbImage[src],img.bbImage[data-src]");
+            const raw = image?.closest(".bbImageWrapper")?.getAttribute("data-src") || image?.getAttribute("data-src") || image?.getAttribute("src");
+            const direct = absolute(raw, response.url || item.url);
+            if (direct) { item.type = "image"; item.url = direct; item.preview = direct; }
+          }
+        } catch (error) {
+          console.debug("No se pudo resolver el adjunto:", item.url, error);
         }
-      } catch (error) { console.debug("No se pudo resolver el adjunto:", item.url, error); }
-    }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, pending.length) }, worker));
   }
 
   async function scrapeAllPages() {
+    if (!activeThread) throw new Error("Abre un tema de PeruTops antes de iniciar la extracción.");
     const items = new Map();
     const visited = new Set();
-    const queue = [location.href.split("#")[0]];
+    const queue = [threadPageUrl(location.href, location.href) || location.href.split("#")[0]];
+    const pageErrors = [];
     let pagesScanned = 0;
-    while (queue.length && pagesScanned < MAX_PAGES) {
+
+    while (queue.length) {
       const pageUrl = queue.shift();
       if (!pageUrl || visited.has(pageUrl)) continue;
       visited.add(pageUrl);
-      let doc;
       try {
-        if (pageUrl === location.href.split("#")[0]) doc = document;
-        else {
+        if (!threadIdentity.isSameThread(pageUrl, activeThread.threadUrl)) throw new Error("La URL no pertenece al tema activo.");
+        let doc;
+        if (pageUrl === threadPageUrl(location.href, location.href)) {
+          doc = document;
+        } else {
           const response = await fetch(pageUrl, { credentials: "include", redirect: "follow" });
-          if (!response.ok || !(response.headers.get("content-type") || "").includes("text/html")) continue;
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          if (response.url && !threadIdentity.isSameThread(response.url, activeThread.threadUrl)) {
+            throw new Error("El servidor redirigió fuera del tema activo.");
+          }
+          const finalPageUrl = response.url ? threadPageUrl(response.url, response.url) : pageUrl;
+          if (finalPageUrl && finalPageUrl !== pageUrl) {
+            throw new Error("El servidor redirigió a otra página del tema; se evita contarla como esta página.");
+          }
+          if (!(response.headers.get("content-type") || "").toLowerCase().includes("text/html")) {
+            throw new Error("La respuesta no es una página HTML.");
+          }
           doc = new DOMParser().parseFromString(await response.text(), "text/html");
         }
-      } catch (error) { console.warn("Error leyendo página:", pageUrl, error); continue; }
-      const discovered = new Set();
-      extractDocument(doc, pageUrl, items, discovered);
-      pagesScanned++;
-      for (const next of discovered) if (!visited.has(next) && !queue.includes(next)) queue.push(next);
-      chrome.runtime.sendMessage({ type: "EXTRACTOR_PROGRESS", pagesScanned, itemsFound: items.size }).catch(() => {});
+        const discovered = new Set();
+        extractDocument(doc, pageUrl, items, discovered);
+        pagesScanned++;
+        for (const next of discovered) if (!visited.has(next) && !queue.includes(next)) queue.push(next);
+        chrome.runtime.sendMessage({
+          type: "EXTRACTOR_PROGRESS", sessionId: activeSessionId, threadId: activeThread.threadId,
+          pagesScanned, pagesQueued: queue.length, itemsFound: items.size
+        }).catch(() => {});
+      } catch (error) {
+        pageErrors.push({ url: pageUrl, message: error?.message || "Error desconocido" });
+        console.warn("Ext-Media: no se pudo procesar la página", pageUrl, error);
+      }
     }
+
     await resolveAttachmentMedia(items);
-    return { items: [...items.values()], pagesScanned, sourceUrl: location.href };
+    return {
+      items: [...items.values()], pagesScanned, pagesFailed: pageErrors.length,
+      pageErrors, complete: pageErrors.length === 0, sessionId: activeSessionId, sourceUrl: location.href,
+      threadId: activeThread.threadId, threadUrl: activeThread.threadUrl
+    };
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type !== "START_EXTRACTOR") return;
+    if (!activeThread) { sendResponse({ ok: false, error: "Abre un tema de PeruTops válido antes de iniciar." }); return; }
     if (running) { sendResponse({ ok: false, error: "Ya hay una extracción en curso." }); return; }
     running = true;
-    sendResponse({ ok: true });
+    activeSessionId = crypto.randomUUID();
+    const sessionId = activeSessionId;
+    sendResponse({ ok: true, sessionId });
     scrapeAllPages().then(result => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", ...result }))
-      .catch(error => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", items: [], pagesScanned: 0, sourceUrl: location.href, error: error?.message || "La extracción falló." }).catch(() => {}))
-      .finally(() => { running = false; });
+      .catch(error => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", sessionId, items: [], pagesScanned: 0, sourceUrl: location.href, threadId: activeThread.threadId, threadUrl: activeThread.threadUrl, complete: false, error: error?.message || "La extracción falló." }).catch(() => {}))
+      .finally(() => { running = false; activeSessionId = ""; });
   });
 })();

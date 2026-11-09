@@ -2,6 +2,7 @@ const gallery = document.getElementById("gallery");
 const summary = document.getElementById("summary");
 const status = document.getElementById("status");
 let data = { items: [], pagesScanned: 0, sourceUrl: "" };
+const sessionId = new URLSearchParams(location.search).get("sessionId") || "";
 let activeFilter = "all";
 let viewerItems = [];
 let viewerIndex = 0;
@@ -71,7 +72,7 @@ function renderViewerItem() {
     const video = document.createElement("video");
     video.src = resourceUrl(item);
     video.controls = true;
-    video.autoplay = true;
+    video.autoplay = false;
     video.playsInline = true;
     video.preload = "metadata";
     stage.append(video);
@@ -142,9 +143,11 @@ function createCard(item) {
   details.append(make("h3", "", item.title || labels[item.type] || "Recurso"));
   details.append(make("div", "meta", `Tipo: ${labels[item.type] || item.type || "Recurso"}`));
   if (item.author) details.append(make("div", "meta", `Autor: ${item.author}`));
+  if (item.isQuoted) details.append(make("div", "meta", `También aparece en una cita${item.quotedAuthor ? ` de ${item.quotedAuthor}` : ""}`));
   const actions = make("div", "card-actions");
   actions.append(externalLink(url, "Abrir recurso"));
   if (item.sourcePage && safeUrl(item.sourcePage)) actions.append(externalLink(safeUrl(item.sourcePage), "Ir al mensaje"));
+  if (item.quotedPostUrl && safeUrl(item.quotedPostUrl)) actions.append(externalLink(safeUrl(item.quotedPostUrl), "Ir al mensaje citado"));
   const copy = make("button", "", "Copiar URL");
   copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(url); status.textContent = "URL copiada."; } catch { status.textContent = "No se pudo copiar la URL."; } });
   actions.append(copy); details.append(actions); card.append(preview, details); return card;
@@ -154,7 +157,7 @@ function render() {
   const filtered = data.items.filter(item => activeFilter === "all" || item.type === activeFilter);
   gallery.replaceChildren();
   if (!filtered.length) {
-    const msg = data.error ? `La extracción no pudo completarse: ${data.error}` : data.items.length ? "No hay recursos en esta categoría." : "No se encontraron recursos. Comprueba que el tema esté cargado y que la extensión tenga acceso.";
+    const msg = data.error ? `La extracción no pudo completarse: ${data.error}` : data.items.length ? "No hay recursos en esta categoría." : data.pagesFailed ? `No se pudieron leer ${data.pagesFailed} páginas del tema.` : "No se encontraron recursos. Comprueba que el tema esté cargado y que la extensión tenga acceso.";
     gallery.append(make("div", "empty", msg));
   } else {
     const fragment = document.createDocumentFragment();
@@ -165,8 +168,12 @@ function render() {
   Object.keys(labels).forEach(type => counts[type] = data.items.filter(item => item.type === type).length);
   document.querySelectorAll("[data-count]").forEach(el => el.textContent = String(counts[el.dataset.count] ?? 0));
   document.querySelectorAll("#filters button[data-filter]").forEach(button => { button.disabled = button.dataset.filter !== "all" && !counts[button.dataset.filter]; });
-  summary.textContent = `${data.items.length} recursos · ${data.pagesScanned} páginas recorridas`;
-  status.textContent = data.error ? "La extracción terminó con un error." : activeFilter === "all" ? "Resultados del tema actual." : `${filtered.length} resultados en ${labels[activeFilter] || activeFilter}.`;
+  const threadLabel = data.threadId ? ` · Tema #${data.threadId}` : "";
+  const partialLabel = data.complete === false ? ` · Parcial: ${data.pagesFailed || 0} páginas con error` : "";
+  summary.textContent = `${data.items.length} recursos · ${data.pagesScanned} páginas recorridas${threadLabel}${partialLabel}`;
+  status.textContent = data.error ? "La extracción terminó con un error." :
+    data.complete === false ? `Extracción parcial. ${data.pagesFailed || 0} páginas no pudieron procesarse.` :
+    activeFilter === "all" ? "Extracción completada para el tema activo." : `${filtered.length} resultados en ${labels[activeFilter] || activeFilter}.`;
 }
 
 document.getElementById("filters")?.addEventListener("click", event => {
@@ -192,10 +199,16 @@ document.getElementById("copyUrls")?.addEventListener("click", async () => {
 });
 document.getElementById("clear")?.addEventListener("click", async () => {
   if (!confirm("¿Eliminar los resultados temporales de esta sesión?")) return;
-  await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS" }); data = { items: [], pagesScanned: 0, sourceUrl: "" }; render(); status.textContent = "Resultados temporales eliminados.";
+  await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId }); data = { items: [], pagesScanned: 0, sourceUrl: "" }; render(); status.textContent = "Resultados temporales eliminados.";
 });
 async function init() {
-  try { const result = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS" }); if (result) data = result; render(); }
+  try {
+    if (!sessionId) throw new Error("No se indicó la sesión de extracción.");
+    const result = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId });
+    if (result) data = result;
+    else throw new Error("Los resultados de esta sesión ya no están disponibles.");
+    render();
+  }
   catch (error) { status.textContent = `Error cargando resultados: ${error.message}`; }
 }
 init();

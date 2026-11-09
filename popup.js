@@ -19,8 +19,8 @@ startButton.addEventListener("click", async () => {
     const url = new URL(tab.url);
 
     const hostname = url.hostname.replace(/^www\./i, "");
-    if (!["perutops.com", "forosperu.club"].includes(hostname)) {
-      throw new Error("Abre un tema de PeruTops o Foros Perú.");
+    if (!["perutops.com"].includes(hostname) || !/\/threads\/[^/]+\.\d+(?:\/|$)/i.test(url.pathname)) {
+      throw new Error("Abre un tema de PeruTops antes de iniciar la extracción.");
     }
 
     const response = await chrome.tabs.sendMessage(tab.id, {
