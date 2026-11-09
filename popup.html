@@ -32,7 +32,8 @@
     .recent h3 { margin: 0 0 8px; font-size: 13px; color: #d6dae2; }
     .job { border: 1px solid #343943; border-radius: 7px; padding: 9px; margin: 7px 0; }
     .job p { margin: 0 0 6px; font-size: 12px; }
-    .job button { padding: 7px; font-size: 12px; }
+    .job button { padding: 7px; margin-top: 5px; font-size: 12px; }
+    .job button.secondary { background: #343943; color: #ffc4c4; }
     .job button:disabled { opacity: .45; }
     .muted { color: #9299a6; font-size: 11px; }
   </style>
@@ -44,6 +45,7 @@
   <p id="status" role="status">Preparado.</p>
   <section class="recent" aria-labelledby="recentTitle">
     <h3 id="recentTitle">Extracciones recientes</h3>
+    <p class="muted">Cerrar la galería conserva los resultados. Usa «Eliminar datos» para liberar espacio y quitar una extracción del historial.</p>
     <div id="recentJobs"><p class="muted">Cargando historial…</p></div>
   </section>
   <script src="popup.js"></script>

@@ -34,7 +34,23 @@ async function loadRecentJobs() {
       open.addEventListener("click", () => {
         chrome.tabs.create({ url: `${chrome.runtime.getURL("gallery.html")}?sessionId=${encodeURIComponent(job.sessionId)}` });
       });
-      card.append(open);
+      const remove = node("button", "secondary", "Eliminar datos");
+      remove.type = "button";
+      remove.disabled = ["running", "queued", "finalizing"].includes(job.status);
+      remove.title = "Elimina los recursos y también esta entrada del historial";
+      remove.addEventListener("click", async () => {
+        if (!confirm("¿Eliminar todos los recursos y el registro de esta extracción?")) return;
+        remove.disabled = true;
+        try {
+          const result = await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId: job.sessionId });
+          if (result?.ok === false) throw new Error(result.error || "No se pudo eliminar.");
+          await loadRecentJobs();
+        } catch (error) {
+          remove.disabled = false;
+          status.textContent = `No se pudo eliminar la extracción: ${error.message}`;
+        }
+      });
+      card.append(open, remove);
       recentJobs.append(card);
     }
   } catch (error) {

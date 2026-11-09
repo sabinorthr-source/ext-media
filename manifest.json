@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ext-Media",
-  "version": "1.4.0",
+  "version": "1.5.1",
   "description": "Extensión local para extraer y organizar multimedia de temas de PeruTops.",
   "permissions": [
     "activeTab"
@@ -25,6 +25,7 @@
       ],
       "js": [
         "shared/thread-identity.js",
+        "shared/perutops-parser.js",
         "content.js"
       ],
       "run_at": "document_idle"

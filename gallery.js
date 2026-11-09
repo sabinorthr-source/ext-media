@@ -1,7 +1,7 @@
 const gallery = document.getElementById("gallery");
 const summary = document.getElementById("summary");
 const status = document.getElementById("status");
-let data = { items: [], pagesScanned: 0, sourceUrl: "" };
+let data = { items: [], pagesScanned: 0, sourceUrl: "", totalItems: 0, offset: 0, limit: 100, hasMore: false };
 const sessionId = new URLSearchParams(location.search).get("sessionId") || "";
 let activeFilter = "all";
 let viewerItems = [];
@@ -78,14 +78,16 @@ function renderViewerItem() {
     stage.append(video);
   } else {
     const img = document.createElement("img");
-    img.src = safeUrl(item.preview) || safeUrl(item.url);
+    // El visor abre primero el recurso original; la miniatura solo es fallback.
+    img.src = safeUrl(item.url) || safeUrl(item.preview);
     img.alt = item.title || "Imagen";
+    img.decoding = "async";
     img.draggable = false;
     if (item.fallbackUrl && item.fallbackUrl !== img.src) {
       img.addEventListener("error", () => {
         if (img.dataset.fallbackTried) return;
         img.dataset.fallbackTried = "1";
-        img.src = safeUrl(item.fallbackUrl);
+        img.src = safeUrl(item.fallbackUrl || item.preview);
       }, { once: true });
     }
     stage.append(img);
@@ -124,11 +126,12 @@ function createCard(item) {
   if (!url) return card;
   if (isImage(item)) {
     const img = document.createElement("img");
-    img.src = safeUrl(item.preview) || safeUrl(item.url); img.alt = item.title || "Imagen"; img.loading = "lazy";
+    img.src = safeUrl(item.preview) || safeUrl(item.url); img.alt = item.title || "Imagen"; img.loading = "lazy"; img.decoding = "async"; img.fetchPriority = "low";
     img.addEventListener("error", () => {
-      if (item.fallbackUrl && img.src !== item.fallbackUrl && !img.dataset.fallbackTried) {
+      const fallback = safeUrl(item.fallbackUrl) || safeUrl(item.preview);
+      if (fallback && img.src !== fallback && !img.dataset.fallbackTried) {
         img.dataset.fallbackTried = "1";
-        img.src = safeUrl(item.fallbackUrl);
+        img.src = fallback;
       } else preview.replaceChildren(make("div", "placeholder", "Vista previa no disponible"));
     });
     img.addEventListener("click", () => openViewer(item)); preview.append(img);
@@ -175,7 +178,12 @@ function render() {
   })[data.status] || (data.complete === false ? "Parcial" : "Completada");
   const partialLabel = data.status && data.status !== "completed" ? ` · ${statusLabel}` :
     data.complete === false ? " · Parcial" : "";
-  summary.textContent = `${data.items.length} recursos · ${data.pagesScanned} páginas recorridas${threadLabel}${partialLabel}`;
+  const first = data.totalItems ? data.offset + 1 : 0;
+  const last = data.offset + data.items.length;
+  summary.textContent = `${first}-${last} de ${data.totalItems} recursos · ${data.pagesScanned} páginas recorridas${threadLabel}${partialLabel}`;
+  document.getElementById("pageInfo").textContent = `Página ${Math.floor(data.offset / data.limit) + 1} · ${data.items.length} recursos visibles`;
+  document.getElementById("prevPage").disabled = data.offset <= 0;
+  document.getElementById("nextPage").disabled = !data.hasMore;
   status.textContent = data.error ? `${statusLabel}: ${data.error}` :
     data.status === "interrupted" ? "La pestaña de origen se cerró o Chrome se reinició. Se conservaron los recursos recopilados hasta ese momento." :
     data.status === "running" ? "La extracción continúa en la pestaña de origen." :
@@ -194,29 +202,67 @@ function downloadFile(filename, content, type) {
   const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement("a");
   a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-document.getElementById("exportJson")?.addEventListener("click", () => downloadFile("extractor-multimedia.json", JSON.stringify(data, null, 2), "application/json;charset=utf-8"));
-document.getElementById("exportCsv")?.addEventListener("click", () => {
-  const fields = ["type", "title", "url", "playUrl", "sourcePage", "author"];
+async function fetchAllItems() {
+  const all = [];
+  for (let offset = 0; offset < data.totalItems; offset += 100) {
+    const page = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset, limit: 100 });
+    if (!page?.items) break;
+    all.push(...page.items);
+  }
+  return all;
+}
+document.getElementById("exportJson")?.addEventListener("click", async () => {
+  status.textContent = "Preparando exportación completa…";
+  const items = await fetchAllItems();
+  downloadFile("extractor-multimedia.json", JSON.stringify({ ...data, items }, null, 2), "application/json;charset=utf-8");
+  status.textContent = `${items.length} recursos exportados.`;
+});
+document.getElementById("exportCsv")?.addEventListener("click", async () => {
+  status.textContent = "Preparando exportación completa…";
+  const items = await fetchAllItems();
+  const fields = ["type", "title", "url", "playUrl", "sourcePage", "author", "isQuoted", "quotedAuthor"];
   const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const csv = [fields.join(","), ...data.items.map(item => fields.map(field => quote(item[field])).join(","))].join("\r\n");
+  const csv = [fields.join(","), ...items.map(item => fields.map(field => quote(item[field])).join(","))].join("\r\n");
   downloadFile("extractor-multimedia.csv", "\uFEFF" + csv, "text/csv;charset=utf-8");
+  status.textContent = `${items.length} recursos exportados.`;
 });
 document.getElementById("copyUrls")?.addEventListener("click", async () => {
-  const urls = [...new Set(data.items.map(item => item.playUrl || item.url).filter(Boolean))];
-  try { await navigator.clipboard.writeText(urls.join("\n")); status.textContent = `${urls.length} URL copiadas.`; } catch { status.textContent = "No se pudo copiar al portapapeles."; }
+  const items = await fetchAllItems();
+  const urls = [...new Set(items.map(item => item.playUrl || item.url).filter(Boolean))];
+  try { await navigator.clipboard.writeText(urls.join("\n")); status.textContent = `${urls.length} URL copiadas.`; } catch { status.textContent = "No se pudo copiar la URL."; }
 });
+async function loadPage(offset) {
+  const page = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset, limit: 100 });
+  if (!page) throw new Error("Los resultados de esta sesión ya no están disponibles.");
+  data = page;
+  render();
+  gallery.scrollIntoView({ block: "start" });
+}
+document.getElementById("prevPage")?.addEventListener("click", () => loadPage(Math.max(0, data.offset - data.limit)).catch(error => status.textContent = error.message));
+document.getElementById("nextPage")?.addEventListener("click", () => loadPage(data.offset + data.limit).catch(error => status.textContent = error.message));
 document.getElementById("clear")?.addEventListener("click", async () => {
-  if (!confirm("¿Eliminar los resultados temporales de esta sesión?")) return;
-  await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId }); data = { items: [], pagesScanned: 0, sourceUrl: "" }; render(); status.textContent = "Resultados temporales eliminados.";
+  if (!confirm("¿Eliminar definitivamente los recursos y el registro de esta extracción? Ya no aparecerá en Extracciones recientes.")) return;
+  const result = await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId });
+  if (result?.ok === false) { status.textContent = result.error || "No se pudieron eliminar los resultados."; return; }
+  data = { items: [], pagesScanned: 0, sourceUrl: "", totalItems: 0, offset: 0, limit: 100, hasMore: false };
+  render(); status.textContent = "Recursos y registro de esta extracción eliminados.";
 });
+
+// Botón flotante para volver arriba sin alterar la paginación actual.
+const scrollTopButton = document.getElementById("scrollTop");
+function updateScrollTopButton() {
+  scrollTopButton?.classList.toggle("visible", window.scrollY > 500);
+}
+window.addEventListener("scroll", updateScrollTopButton, { passive: true });
+scrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+updateScrollTopButton();
 async function init() {
   try {
     if (!sessionId) throw new Error("No se indicó la sesión de extracción.");
-    const result = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId });
+    const result = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset: 0, limit: 100 });
     if (result) data = result;
     else throw new Error("Los resultados de esta sesión ya no están disponibles.");
     render();
-  }
-  catch (error) { status.textContent = `Error cargando resultados: ${error.message}`; }
+  } catch (error) { status.textContent = `Error cargando resultados: ${error.message}`; }
 }
 init();

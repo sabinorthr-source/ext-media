@@ -1,46 +1,53 @@
-# Ext-Media 1.4.0
+# Ext-Media 1.5.1 — PR3.1 URLs originales + galería fluida
 
-Extensión Chrome Manifest V3 para recopilar recursos multimedia del **tema activo** y mostrarlos en una galería local.
+Extensión Chrome Manifest V3 para extraer recursos multimedia del **tema activo** de `perutops.com` y consultarlos en una galería local. No usa backend, cuentas, sincronización remota ni dependencias de runtime.
 
-## Instalación de desarrollo
+## Instalación
 
 1. Descomprime el ZIP.
-2. Abre `chrome://extensions`.
-3. Activa **Modo de desarrollador**.
-4. Pulsa **Cargar descomprimida** y selecciona esta carpeta.
-5. Abre o recarga un tema y pulsa el icono de Ext-Media.
+2. Abre `chrome://extensions` y activa **Modo de desarrollador**.
+3. Si ya tienes cargada otra copia de Ext-Media, desactívala o elimínala para evitar confundir versiones.
+4. Pulsa **Cargar descomprimida** y selecciona la carpeta `ext-media-v1.5.1`.
+5. Abre un tema de PeruTops y ejecuta la extracción.
 
-No necesita backend, cuenta externa, servicio remoto ni dependencias de runtime. `package.json` solo usa el runner de pruebas integrado en Node.js.
+## Cambios PR3
 
-## Cambios de esta versión
+### Adaptador DOM específico para PeruTops
 
-- La identidad del tema se basa en el ID numérico XenForo, no solo en que la URL contenga `/threads/`.
-- La paginación solo acepta enlaces del paginador que pertenezcan al mismo tema y origen.
-- Se elimina el límite fijo de 200 páginas. El recorrido continúa mientras existan páginas nuevas enlazadas por la paginación del tema.
-- Se registran errores por página y se marca la extracción como parcial si alguna página no pudo leerse.
-- El parser prefiere el nodo `.message` externo para no procesar dos veces `.message-cell--main`.
-- Las imágenes, videos, adjuntos, embeds y enlaces dentro de citas se conservan con metadatos de cita cuando el HTML del foro los expone.
-- La resolución de páginas de adjuntos se limita a cuatro solicitudes concurrentes.
-- Cada ejecución tiene un `sessionId` y se guarda en IndexedDB local. Los resultados parciales se persisten por página, sin depender de la memoria del content script.
-- El service worker registra estados de ejecución, progreso, errores y pestaña de origen; al cerrar la pestaña o reiniciar Chrome, marca la sesión como interrumpida y conserva los recursos ya guardados.
-- La galería recupera resultados desde IndexedDB; las sesiones antiguas se limpian automáticamente después de 14 días y se limita el historial a 20 trabajos.
-- Se elimina el permiso `storage`: esta versión usa IndexedDB y no guarda el catálogo en `chrome.storage.session`.
-- El manifiesto se limita a una web.
-- Se elimina el diálogo antiguo sin uso de `gallery.html`; el visor activo sigue siendo el diálogo creado por `gallery.js`.
-- Los videos ya no se reproducen automáticamente al abrir el visor.
+- Añade `shared/perutops-parser.js`, separado del coordinador de extracción.
+- Reconoce adjuntos en miniatura: `.message-attachments`, `.attachmentList`, `.file.file--linked`, `.file-preview`, `.u-anchorTarget#attachment-{id}`.
+- Trata `img.src` de `media.perutops.com/attachments/...` como miniatura, no como recurso original.
+- Conserva la URL de la página del adjunto (`a.file-preview[href]`) y resuelve la URL original mediante una solicitud autenticada al mismo origen.
+- Usa el ID numérico del adjunto como clave estable para deduplicar aunque la URL resuelta cambie.
+- Reconoce imágenes dentro de citas XenForo (`blockquote.bbCodeBlock--quote`) y enlaces externos `a.link--external > img.bbImage`.
+- Prefiere el `href` de la imagen externa como URL original y conserva `src`/`data-url` como miniatura.
+- Distingue páginas de adjunto del foro (mismo origen) de URLs directas del CDN.
+- Reconoce enlaces CDN `.data` cuyo parámetro `a` contiene el nombre original, conservando íntegros los tokens y parámetros de acceso.
+- Extrae autor y referencia al post citado desde `data-source="post:{id}"` y `.bbCodeBlock-sourceJump`.
+- Mantiene los orígenes de aparición para no perder el contexto si un recurso aparece en el post original y en una cita.
+- Excluye avatares, firmas, reacciones, medallas y controles del editor.
+- Mantiene extracción de vídeos, iframes y enlaces multimedia.
 
-## Arquitectura de PR2
+### Memoria y galería
 
-- `background.js`: router de mensajes, ciclo de vida de pestañas, badge de progreso y apertura de galería.
-- `storage/indexed-db.js`: apertura/versionado de IndexedDB y utilidades de transacción.
-- `storage/job-repository.js`: persistencia de ejecuciones, lotes de recursos, consultas, limpieza y estados de interrupción.
-- `shared/job-state.js`: normalización y transiciones de estados, compartida con pruebas Node.
-- `content.js`: mantiene la lectura/parseo DOM porque necesita `DOMParser`; envía lotes de hasta 100 recursos al service worker.
-- `gallery.js`: consulta el repositorio por `sessionId`; no depende de `chrome.storage.session`.
+- Ya no mantiene un `Map` con todos los recursos de todas las páginas durante la extracción.
+- Procesa cada página en un mapa temporal, resuelve sus adjuntos, guarda lotes y libera el mapa antes de avanzar.
+- El repositorio fusiona registros repetidos sin perder atribución de citas.
+- La galería consulta IndexedDB en páginas de 100 recursos; no carga todo el catálogo ni crea miles de tarjetas DOM al abrir.
+- JSON, CSV y copiar URLs recuperan todos los lotes solo cuando el usuario solicita explícitamente esa operación.
+- Las tarjetas fuera de pantalla usan `content-visibility`, y las imágenes usan carga diferida, decodificación asíncrona y prioridad baja.
+- El visor abre primero la URL original y recurre a la miniatura si el original falla.
+- Añade un botón flotante para volver al inicio.
+- «Limpiar» elimina los recursos y también el registro de esa sesión; el popup permite eliminar extracciones terminadas sin abrir la galería.
 
-Estados persistidos: `running`, `completed`, `partial`, `failed` e `interrupted`. El historial conserva hasta 20 trabajos y elimina trabajos terminados con más de 14 días. La política se aplica a metadatos y URLs, no descarga ni almacena los archivos multimedia.
+### Integridad y límites
 
-## Pruebas automatizadas
+- La identidad y paginación siguen limitadas al mismo tema activo de PeruTops.
+- No se reintroduce un límite fijo de 200 páginas.
+- La concurrencia de resolución de adjuntos se mantiene en cuatro solicitudes.
+- No se descargan ni almacenan los archivos multimedia completos; se guardan metadatos y URLs.
+
+## Pruebas
 
 Requiere Node.js 18 o superior:
 
@@ -49,25 +56,30 @@ npm test
 npm run check
 ```
 
-Las pruebas cubren identidad del tema, aislamiento entre hilos, dominio HTTPS, alias `www`, normalización de rutas de paginación y transiciones de estado de ejecución.
+Las pruebas cubren identidad de tema, clasificación de URLs, IDs de adjuntos, selección de limpieza de historial, estado de trabajos, manifiesto e importaciones. Los tests no simulan un navegador DOM completo ni reemplazan la validación manual de Chrome.
 
-## Pruebas manuales pendientes en Chrome
+## Validación manual obligatoria en PeruTops
 
-Estas pruebas requieren una sesión real; no se pueden certificar con las pruebas unitarias:
+1. Abrir un tema con adjuntos en miniatura como el fragmento compartido: verificar que aparezcan en galería y que la URL original no sea la miniatura de 65×140.
+2. Abrir una cita con `blockquote.bbCodeBlock--quote` e imágenes `a.link--external > img.bbImage`: verificar miniatura, URL original, autor citado y enlace al post citado.
+3. Verificar un adjunto de imagen citado y uno de vídeo, si el foro los ofrece.
+4. Probar firmas, avatares, medallas y reacciones para comprobar que no se incorporen.
+5. Abrir una extracción con cientos o miles de recursos: comprobar que la galería carga 100 por página y que los controles anterior/siguiente funcionan.
+6. Exportar JSON y CSV y confirmar que incluyan todos los recursos, no solo la página visible.
+7. Probar un tema de más de 200 páginas si existe uno accesible.
 
-1. Abrir un tema de varias páginas y confirmar que se recorre desde la página actual hasta todas las páginas enlazadas.
-2. Confirmar que un enlace a otro tema dentro de un post o una cita no se incorpora al recorrido.
-3. Probar una cita que contenga una imagen, un enlace de adjunto y un video, si existe un ejemplo visible.
-4. Abrir dos temas en pestañas distintas y confirmar que cada galería muestra su propia sesión.
-5. Probar un tema con más de 200 páginas si el sitio dispone de uno accesible.
-6. Repetir con un usuario autenticado y con una página que devuelva 403/404 para verificar el estado parcial.
+## Limitaciones conocidas / trabajo pendiente
 
-## Limitaciones conocidas
+- La URL original de los adjuntos depende de la respuesta real de la página de adjunto en PeruTops. Si el servidor devuelve un formato HTML distinto al previsto, la miniatura se conserva y habrá que ajustar el resolver con esa respuesta real.
+- No se ha ejecutado esta versión en una sesión real de Chrome conectada a PeruTops; las pruebas automatizadas no certifican el DOM real ni cookies, permisos o anti-hotlink.
+- La cola global entre pestañas aún no está implementada. La afirmación anterior de que dos temas se ponen en cola no está respaldada por el código PR2 inspeccionado: esta versión mantiene sesiones aisladas, pero puede permitir que dos pestañas intenten extraer simultáneamente. Debe corregirse en PR2.1 antes de considerar completa la gestión de trabajos.
+- La extracción no se reanuda automáticamente después de cerrar/recargar la pestaña. Los resultados parciales sí se conservan.
+- Cerrar la galería no borra la extracción: se conserva para «Extracciones recientes». «Limpiar» sí elimina recursos y registro, por lo que esa extracción deja de aparecer en recientes.
+- La limpieza automática (al iniciar Chrome/instalar o actualizar la extensión y al finalizar una extracción) conserva todas las sesiones activas, elimina sesiones terminadas de más de 14 días y limita a 20 las sesiones terminadas más recientes. El popup muestra las seis más recientes.
+- Los contadores y filtros de la galería reflejan la página visible de 100 elementos. Las exportaciones y copia de URLs abarcan el conjunto completo.
 
-- El crawler depende de que XenForo exponga los enlaces de navegación en `.pageNav`, `.pageNavWrapper`, `.pagination` o `rel="next"`. Si la web personaliza ese HTML, habrá que ajustar el adaptador con una captura DOM real.
-- No se ha probado la extensión en una sesión autenticada real de Chrome. El acceso de lectura de páginas protegidas depende de los permisos y cookies que el navegador ya tenga.
-- La persistencia de resultados está en IndexedDB. La ejecución del crawler y el parseo siguen dependiendo de la pestaña de origen: si se cierra, navega, se recarga, Chrome se reinicia o la extensión se actualiza, el trabajo se marca como interrumpido y se conservan los resultados parciales, pero todavía no se reanuda automáticamente.
+## Estructura añadida
 
-## Validación pendiente en navegador
-
-Esta entrega pasó las pruebas unitarias y las comprobaciones de sintaxis, pero aún requiere una prueba manual en Chrome con la web para validar el ciclo real de IndexedDB, la suspensión/reactivación del service worker y el cierre/recarga de pestañas. PR2 no implementa reanudación automática del crawler: conserva y permite reabrir el resultado parcial.
+- `shared/perutops-parser.js`: parser DOM específico para el marcado observado en PeruTops.
+- `tests/perutops-parser.test.js`: pruebas de clasificación y claves de adjuntos.
+- `tests/fixtures/perutops/README.md`: contrato DOM documentado a partir de los fragmentos facilitados.

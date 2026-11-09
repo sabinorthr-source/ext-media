@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     case "EXTRACTOR_PAGE_BATCH": task = repository.saveBatch(message).then(() => ({ ok: true })); break;
     case "EXTRACTOR_RESULTS": task = finishAndOpenGallery(message); break;
-    case "GET_EXTRACTOR_RESULTS": task = repository.get(message.sessionId); break;
+    case "GET_EXTRACTOR_RESULTS": task = repository.getPage(message.sessionId, message.offset, message.limit); break;
     case "GET_EXTRACTOR_SESSIONS": task = repository.listRecent(message.limit); break;
     case "CLEAR_EXTRACTOR_RESULTS": task = repository.remove(message.sessionId).then(result => repository.cleanup().then(() => result)); break;
     default: return;

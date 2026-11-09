@@ -32,8 +32,13 @@
   </nav>
 
   <p id="status" role="status"></p>
+  <div class="pagination" aria-label="Paginación de resultados">
+    <button id="prevPage" disabled>Anterior</button>
+    <span id="pageInfo">Página 1</span>
+    <button id="nextPage" disabled>Siguiente</button>
+  </div>
   <main id="gallery" class="gallery"></main>
-
+  <button id="scrollTop" class="scroll-top" type="button" aria-label="Volver al inicio" title="Volver al inicio">↑</button>
 
   <script src="gallery.js"></script>
 </body>
