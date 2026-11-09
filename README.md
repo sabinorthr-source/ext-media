@@ -1,6 +1,6 @@
-# Ext-Media 1.4.0 — PeruTops
+# Ext-Media 1.4.0
 
-Extensión Chrome Manifest V3 para recopilar recursos multimedia del **tema activo** de `perutops.com` y mostrarlos en una galería local.
+Extensión Chrome Manifest V3 para recopilar recursos multimedia del **tema activo** y mostrarlos en una galería local.
 
 ## Instalación de desarrollo
 
@@ -8,7 +8,7 @@ Extensión Chrome Manifest V3 para recopilar recursos multimedia del **tema acti
 2. Abre `chrome://extensions`.
 3. Activa **Modo de desarrollador**.
 4. Pulsa **Cargar descomprimida** y selecciona esta carpeta.
-5. Abre o recarga un tema de PeruTops y pulsa el icono de Ext-Media.
+5. Abre o recarga un tema y pulsa el icono de Ext-Media.
 
 No necesita backend, cuenta externa, servicio remoto ni dependencias de runtime. `package.json` solo usa el runner de pruebas integrado en Node.js.
 
@@ -25,7 +25,7 @@ No necesita backend, cuenta externa, servicio remoto ni dependencias de runtime.
 - El service worker registra estados de ejecución, progreso, errores y pestaña de origen; al cerrar la pestaña o reiniciar Chrome, marca la sesión como interrumpida y conserva los recursos ya guardados.
 - La galería recupera resultados desde IndexedDB; las sesiones antiguas se limpian automáticamente después de 14 días y se limita el historial a 20 trabajos.
 - Se elimina el permiso `storage`: esta versión usa IndexedDB y no guarda el catálogo en `chrome.storage.session`.
-- El manifiesto se limita a `perutops.com` y `www.perutops.com`; se retira el dominio anterior `forosperu.club`.
+- El manifiesto se limita a una web.
 - Se elimina el diálogo antiguo sin uso de `gallery.html`; el visor activo sigue siendo el diálogo creado por `gallery.js`.
 - Los videos ya no se reproducen automáticamente al abrir el visor.
 
@@ -53,7 +53,7 @@ Las pruebas cubren identidad del tema, aislamiento entre hilos, dominio HTTPS, a
 
 ## Pruebas manuales pendientes en Chrome
 
-Estas pruebas requieren una sesión real de PeruTops; no se pueden certificar con las pruebas unitarias:
+Estas pruebas requieren una sesión real; no se pueden certificar con las pruebas unitarias:
 
 1. Abrir un tema de varias páginas y confirmar que se recorre desde la página actual hasta todas las páginas enlazadas.
 2. Confirmar que un enlace a otro tema dentro de un post o una cita no se incorpora al recorrido.
@@ -64,10 +64,10 @@ Estas pruebas requieren una sesión real de PeruTops; no se pueden certificar co
 
 ## Limitaciones conocidas
 
-- El crawler depende de que XenForo exponga los enlaces de navegación en `.pageNav`, `.pageNavWrapper`, `.pagination` o `rel="next"`. Si PeruTops personaliza ese HTML, habrá que ajustar el adaptador con una captura DOM real.
+- El crawler depende de que XenForo exponga los enlaces de navegación en `.pageNav`, `.pageNavWrapper`, `.pagination` o `rel="next"`. Si la web personaliza ese HTML, habrá que ajustar el adaptador con una captura DOM real.
 - No se ha probado la extensión en una sesión autenticada real de Chrome. El acceso de lectura de páginas protegidas depende de los permisos y cookies que el navegador ya tenga.
 - La persistencia de resultados está en IndexedDB. La ejecución del crawler y el parseo siguen dependiendo de la pestaña de origen: si se cierra, navega, se recarga, Chrome se reinicia o la extensión se actualiza, el trabajo se marca como interrumpido y se conservan los resultados parciales, pero todavía no se reanuda automáticamente.
 
 ## Validación pendiente en navegador
 
-Esta entrega pasó las pruebas unitarias y las comprobaciones de sintaxis, pero aún requiere una prueba manual en Chrome con PeruTops para validar el ciclo real de IndexedDB, la suspensión/reactivación del service worker y el cierre/recarga de pestañas. PR2 no implementa reanudación automática del crawler: conserva y permite reabrir el resultado parcial.
+Esta entrega pasó las pruebas unitarias y las comprobaciones de sintaxis, pero aún requiere una prueba manual en Chrome con la web para validar el ciclo real de IndexedDB, la suspensión/reactivación del service worker y el cierre/recarga de pestañas. PR2 no implementa reanudación automática del crawler: conserva y permite reabrir el resultado parcial.
