@@ -169,10 +169,18 @@ function render() {
   document.querySelectorAll("[data-count]").forEach(el => el.textContent = String(counts[el.dataset.count] ?? 0));
   document.querySelectorAll("#filters button[data-filter]").forEach(button => { button.disabled = button.dataset.filter !== "all" && !counts[button.dataset.filter]; });
   const threadLabel = data.threadId ? ` · Tema #${data.threadId}` : "";
-  const partialLabel = data.complete === false ? ` · Parcial: ${data.pagesFailed || 0} páginas con error` : "";
+  const statusLabel = ({
+    completed: "Completada", partial: "Parcial", failed: "Fallida",
+    interrupted: "Interrumpida", cancelled: "Cancelada", running: "En curso", queued: "En cola"
+  })[data.status] || (data.complete === false ? "Parcial" : "Completada");
+  const partialLabel = data.status && data.status !== "completed" ? ` · ${statusLabel}` :
+    data.complete === false ? " · Parcial" : "";
   summary.textContent = `${data.items.length} recursos · ${data.pagesScanned} páginas recorridas${threadLabel}${partialLabel}`;
-  status.textContent = data.error ? "La extracción terminó con un error." :
-    data.complete === false ? `Extracción parcial. ${data.pagesFailed || 0} páginas no pudieron procesarse.` :
+  status.textContent = data.error ? `${statusLabel}: ${data.error}` :
+    data.status === "interrupted" ? "La pestaña de origen se cerró o Chrome se reinició. Se conservaron los recursos recopilados hasta ese momento." :
+    data.status === "running" ? "La extracción continúa en la pestaña de origen." :
+    data.status === "partial" || data.complete === false ? `Extracción parcial. ${data.pagesFailed || 0} páginas no pudieron procesarse.` :
+    data.status === "failed" ? "La extracción falló; se conservaron los resultados parciales disponibles." :
     activeFilter === "all" ? "Extracción completada para el tema activo." : `${filtered.length} resultados en ${labels[activeFilter] || activeFilter}.`;
 }
 

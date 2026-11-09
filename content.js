@@ -13,6 +13,12 @@
   };
   const cleanText = value => String(value || "").replace(/\s+/g, " ").trim();
 
+  async function sendToBackground(message) {
+    const response = await chrome.runtime.sendMessage(message);
+    if (response?.ok === false) throw new Error(response.error || "El service worker rechazó la operación.");
+    return response;
+  }
+
   function classifyUrl(url, label = "") {
     const raw = String(url || "");
     const path = raw.split(/[?#]/)[0].toLowerCase();
@@ -228,6 +234,7 @@
     const queue = [threadPageUrl(location.href, location.href) || location.href.split("#")[0]];
     const pageErrors = [];
     let pagesScanned = 0;
+    const persistedItemKeys = new Set();
 
     while (queue.length) {
       const pageUrl = queue.shift();
@@ -257,19 +264,58 @@
         extractDocument(doc, pageUrl, items, discovered);
         pagesScanned++;
         for (const next of discovered) if (!visited.has(next) && !queue.includes(next)) queue.push(next);
-        chrome.runtime.sendMessage({
+
+        // Guarda los nuevos recursos por página: si la pestaña o el service worker
+        // desaparecen, los resultados parciales ya procesados sobreviven en IndexedDB.
+        const newItems = [];
+        for (const item of items.values()) {
+          if (!persistedItemKeys.has(item.url)) {
+            persistedItemKeys.add(item.url);
+            newItems.push(item);
+          }
+        }
+        for (let offset = 0; offset < newItems.length; offset += 100) {
+          await sendToBackground({
+            type: "EXTRACTOR_PAGE_BATCH", sessionId: activeSessionId,
+            items: newItems.slice(offset, offset + 100), pagesScanned, itemsFound: items.size
+          });
+        }
+        await sendToBackground({
           type: "EXTRACTOR_PROGRESS", sessionId: activeSessionId, threadId: activeThread.threadId,
-          pagesScanned, pagesQueued: queue.length, itemsFound: items.size
-        }).catch(() => {});
+          pagesScanned, pagesQueued: queue.length, itemsFound: items.size,
+          pagesFailed: pageErrors.length, pageErrors: pageErrors.slice(-100), currentPageUrl: pageUrl
+        });
       } catch (error) {
         pageErrors.push({ url: pageUrl, message: error?.message || "Error desconocido" });
         console.warn("Ext-Media: no se pudo procesar la página", pageUrl, error);
+        await sendToBackground({
+          type: "EXTRACTOR_PROGRESS", sessionId: activeSessionId, threadId: activeThread.threadId,
+          pagesScanned, pagesQueued: queue.length, itemsFound: items.size,
+          pagesFailed: pageErrors.length, pageErrors: pageErrors.slice(-100), currentPageUrl: pageUrl
+        }).catch(() => {});
       }
     }
 
     await resolveAttachmentMedia(items);
+    const finalItems = [...items.values()];
+    // Se envía un snapshot final en lotes para actualizar URLs resueltas sin
+    // depender de un mensaje gigante ni perder la posibilidad de guardar progreso.
+    if (finalItems.length) {
+      for (let offset = 0; offset < finalItems.length; offset += 100) {
+        await sendToBackground({
+          type: "EXTRACTOR_PAGE_BATCH", sessionId: activeSessionId,
+          items: finalItems.slice(offset, offset + 100), itemsFound: finalItems.length,
+          replaceExisting: offset === 0
+        });
+      }
+    } else {
+      await sendToBackground({
+        type: "EXTRACTOR_PAGE_BATCH", sessionId: activeSessionId,
+        items: [], itemsFound: 0, replaceExisting: true
+      });
+    }
     return {
-      items: [...items.values()], pagesScanned, pagesFailed: pageErrors.length,
+      items: [], pagesScanned, pagesFailed: pageErrors.length,
       pageErrors, complete: pageErrors.length === 0, sessionId: activeSessionId, sourceUrl: location.href,
       threadId: activeThread.threadId, threadUrl: activeThread.threadUrl
     };
@@ -282,9 +328,33 @@
     running = true;
     activeSessionId = crypto.randomUUID();
     const sessionId = activeSessionId;
-    sendResponse({ ok: true, sessionId });
-    scrapeAllPages().then(result => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", ...result }))
-      .catch(error => chrome.runtime.sendMessage({ type: "EXTRACTOR_RESULTS", sessionId, items: [], pagesScanned: 0, sourceUrl: location.href, threadId: activeThread.threadId, threadUrl: activeThread.threadUrl, complete: false, error: error?.message || "La extracción falló." }).catch(() => {}))
-      .finally(() => { running = false; activeSessionId = ""; });
+    (async () => {
+      let responseSent = false;
+      try {
+        await sendToBackground({
+          type: "EXTRACTOR_STARTED", sessionId, sourceUrl: location.href,
+          threadId: activeThread.threadId, threadUrl: activeThread.threadUrl
+        });
+        sendResponse({ ok: true, sessionId });
+        responseSent = true;
+        const result = await scrapeAllPages();
+        await sendToBackground({ type: "EXTRACTOR_RESULTS", ...result });
+      } catch (error) {
+        const messageText = error?.message || "La extracción falló.";
+        if (!responseSent) sendResponse({ ok: false, error: messageText });
+        // Si el trabajo ya comenzó, se conserva un registro fallido en el repositorio local.
+        try {
+          await sendToBackground({
+            type: "EXTRACTOR_RESULTS", sessionId, items: [], pagesScanned: 0,
+            sourceUrl: location.href, threadId: activeThread.threadId,
+            threadUrl: activeThread.threadUrl, complete: false, error: messageText
+          });
+        } catch {}
+      } finally {
+        running = false;
+        activeSessionId = "";
+      }
+    })();
+    return true;
   });
 })();

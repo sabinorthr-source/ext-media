@@ -28,6 +28,13 @@
     }
     button:disabled { opacity: .6; cursor: wait; }
     #status { overflow-wrap: anywhere; }
+    .recent { border-top: 1px solid #343943; margin-top: 14px; padding-top: 12px; }
+    .recent h3 { margin: 0 0 8px; font-size: 13px; color: #d6dae2; }
+    .job { border: 1px solid #343943; border-radius: 7px; padding: 9px; margin: 7px 0; }
+    .job p { margin: 0 0 6px; font-size: 12px; }
+    .job button { padding: 7px; font-size: 12px; }
+    .job button:disabled { opacity: .45; }
+    .muted { color: #9299a6; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -35,6 +42,10 @@
   <p>Recopila imágenes, videos, adjuntos, embeds y enlaces de todas las páginas accesibles del tema activo.</p>
   <button id="start">Extraer tema y abrir galería</button>
   <p id="status" role="status">Preparado.</p>
+  <section class="recent" aria-labelledby="recentTitle">
+    <h3 id="recentTitle">Extracciones recientes</h3>
+    <div id="recentJobs"><p class="muted">Cargando historial…</p></div>
+  </section>
   <script src="popup.js"></script>
 </body>
 </html>
