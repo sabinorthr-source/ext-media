@@ -1,17 +1,27 @@
 {
   "manifest_version": 3,
   "name": "Ext-Media",
-  "version": "1.6.0",
-  "description": "Extensión local para extraer y organizar multimedia de temas de PeruTops.",
+  "version": "1.7.0",
+  "description": "Extensión local para extraer y organizar multimedia de temas.",
   "permissions": [
     "activeTab"
   ],
+  "icons": {
+    "16": "assets/logo.png",
+    "32": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png"
+  },
   "host_permissions": [
     "https://perutops.com/*",
     "https://www.perutops.com/*"
   ],
   "action": {
     "default_title": "Extraer multimedia",
+    "default_icon": {
+      "16": "assets/logo.png",
+      "32": "assets/logo.png"
+    },
     "default_popup": "popup.html"
   },
   "background": {

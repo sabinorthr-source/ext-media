@@ -24,3 +24,10 @@
 - Fullscreen y gestos en Windows/Android.
 - Carga de imágenes originales con token y CDN de PeruTops.
 - Prueba de cuota real de IndexedDB y catálogos de varios miles de recursos.
+
+
+## 1.7.0 — PR6
+- Modo prudente: intervalo de 2 s entre inicios de solicitudes, páginas y adjuntos secuenciales.
+- Detención sin reintentos ante HTTP 401/403/429 y pantallas de acceso/verificación detectables.
+- Conservación de recursos persistidos y estado parcial al detenerse por una barrera.
+- Zoom panorámico con mouse/táctil, rueda, límites de movimiento y máximo 4×.

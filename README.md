@@ -33,3 +33,10 @@ npm run check
 - La cuota real varía por perfil, dispositivo y espacio disponible; no se puede garantizar una capacidad fija.
 - El visor es un prototipo propio inspirado en el patrón de GLightbox, no una integración del paquete GLightbox. La comparación está en `viewers/README.md`.
 - No se considera validado en producción hasta completar las pruebas manuales en Chrome autenticado.
+
+
+## Modo prudente (1.7.0)
+
+La extracción espera al menos 2 segundos entre inicios de solicitudes HTTP de la extensión. Las páginas y adjuntos se consultan secuencialmente. Si el foro responde HTTP 401, 403 o 429, o se detecta una pantalla de inicio de sesión/verificación, la extracción se detiene sin reintentos automáticos. Los recursos ya persistidos se conservan y el trabajo se marca como parcial cuando corresponde. Esta reducción de frecuencia no garantiza que la actividad sea indetectable ni evita por sí sola sanciones: deben respetarse las reglas del foro.
+
+El visor permite zoom de 1× a 4× con rueda, botón o teclado, y desplazamiento panorámico con mouse o pantalla táctil, limitado a los bordes de la imagen.
