@@ -1,6 +1,6 @@
 # Ext-Media 1.6.0
 
-Extensión Chrome Manifest V3 para extraer y organizar multimedia del tema activo de la web. Los datos se almacenan localmente en IndexedDB; no usa backend, cuenta, nube ni CDN en tiempo de ejecución.
+Extensión Chrome Manifest V3 para extraer y organizar multimedia del tema activo de PeruTops. Los datos se almacenan localmente en IndexedDB; no usa backend, cuenta, nube ni CDN en tiempo de ejecución.
 
 ## Funciones
 - Recorrido de todas las páginas del tema activo, sin límite arbitrario de 200 páginas.
@@ -17,7 +17,7 @@ Extensión Chrome Manifest V3 para extraer y organizar multimedia del tema activ
 1. Descomprime el ZIP en una carpeta permanente.
 2. Abre `chrome://extensions/` y activa Modo desarrollador.
 3. Pulsa **Cargar descomprimida** y selecciona la carpeta `ext-media-v1.6.0`.
-4. Inicia la extracción desde una página de tema de la web.
+4. Inicia la extracción desde una página de tema de PeruTops.
 
 Para actualizar una instalación anterior, conserva la misma carpeta e identidad de extensión; haz copia de seguridad y pulsa Recargar. No desinstales si quieres conservar IndexedDB.
 

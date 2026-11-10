@@ -1,0 +1,408 @@
+
+/* ==========================================
+   VISOR MULTIMEDIA — DISEÑO MINIMALISTA
+   ========================================== */
+
+.media-viewer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(5, 7, 11, .985);
+  color: #f5f7fb;
+  overflow: hidden;
+  grid-template-rows: 52px minmax(0, 1fr) auto;
+}
+
+.media-viewer[open] {
+  display: grid;
+}
+
+.media-viewer::backdrop {
+  background: #030407;
+}
+
+
+/* ==========================================
+   BARRA SUPERIOR
+   ========================================== */
+
+.viewer-toolbar {
+  grid-row: 1;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #ffffff12;
+  background: #101319ef;
+}
+
+.viewer-heading,
+.viewer-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viewer-kind {
+  font-size: 10px;
+  letter-spacing: .12em;
+  font-weight: 750;
+  color: #9bbcff;
+}
+
+.viewer-counter {
+  font-size: 12px;
+  color: #c3cad6;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ==========================================
+   ICONOS
+   ========================================== */
+
+.viewer-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+
+/* ==========================================
+   BOTONES SUPERIORES
+   ========================================== */
+
+.viewer-tools button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #cbd2df;
+  cursor: pointer;
+  transition:
+    background .15s ease,
+    color .15s ease;
+}
+
+.viewer-tools button:hover {
+  background: #ffffff14;
+  color: #fff;
+}
+
+.viewer-tools .viewer-close {
+  width: 34px;
+  height: 34px;
+  font-size: initial;
+  line-height: normal;
+  border: 0;
+  background: transparent;
+  color: #d0d5df;
+}
+
+.viewer-tools .viewer-close:hover {
+  background: #e5484d24;
+  color: #ff777d;
+}
+
+
+/* ==========================================
+   ÁREA PRINCIPAL
+   ========================================== */
+
+.viewer-stage {
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 16px 64px;
+  overflow: hidden;
+}
+
+.viewer-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  cursor: zoom-in;
+  transform-origin: center center;
+  transition: transform .16s ease;
+}
+
+.viewer-stage img.is-zoomed {
+  max-width: none;
+  max-height: none;
+  cursor: grab;
+}
+
+.viewer-stage img.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.viewer-stage video {
+  display: block;
+  width: min(100%, 1440px);
+  height: 100%;
+  max-height: calc(100dvh - 190px);
+  object-fit: contain;
+  background: #000;
+}
+
+.viewer-stage .viewer-error {
+  max-width: 520px;
+  padding: 24px;
+  text-align: center;
+  color: #d4dae5;
+  line-height: 1.6;
+}
+
+.viewer-stage .viewer-error a {
+  color: #9fc2ff;
+}
+
+
+/* ==========================================
+   FLECHAS DE NAVEGACIÓN
+   ========================================== */
+
+.viewer-arrow {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #171b25a6;
+  color: #e5e9f0;
+  cursor: pointer;
+  transition:
+    background .15s ease,
+    color .15s ease,
+    opacity .15s ease;
+}
+
+.viewer-arrow .viewer-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.viewer-arrow:hover {
+  background: #343c4b;
+  color: #fff;
+}
+
+.viewer-prev {
+  left: 12px;
+}
+
+.viewer-next {
+  right: 12px;
+}
+
+.viewer-arrow:disabled {
+  opacity: .15;
+  cursor: default;
+}
+
+
+/* ==========================================
+   PIE DEL VISOR
+   ========================================== */
+
+.viewer-footer {
+  grid-row: 3;
+  min-height: 100px;
+  display: grid;
+  grid-template-rows: auto 68px;
+  gap: 5px;
+  padding: 6px 14px 10px;
+  background: linear-gradient(
+    transparent,
+    #080a0f 25%
+  );
+}
+
+.viewer-caption {
+  min-height: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #d5dbe6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ==========================================
+   MINIATURAS
+   ========================================== */
+
+.viewer-thumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 3px 2px 7px;
+  scrollbar-color: #566176 #151922;
+}
+
+.viewer-thumb {
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: #202530;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+.viewer-thumb[aria-current="true"] {
+  border: 2px solid #80adff;
+  box-shadow: none;
+}
+
+.viewer-thumb img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.viewer-thumb .video-thumb {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 23px;
+  color: #fff;
+  background: #080a1080;
+}
+
+.viewer-thumb .video-thumb small {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  font-size: 9px;
+  letter-spacing: .04em;
+  color: #d7deeb;
+}
+
+
+/* ==========================================
+   ESTADO DEL DOCUMENTO
+   ========================================== */
+
+body.viewer-open {
+  overflow: hidden;
+}
+
+
+/* ==========================================
+   RESPONSIVE — MÓVILES
+   ========================================== */
+
+@media (max-width: 640px) {
+
+  .viewer-toolbar {
+    padding: 0 10px;
+  }
+
+  .viewer-heading,
+  .viewer-tools {
+    gap: 6px;
+  }
+
+  .viewer-tools button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .viewer-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .viewer-stage {
+    padding: 12px 44px;
+  }
+
+  .viewer-arrow {
+    width: 34px;
+    height: 34px;
+  }
+
+  .viewer-arrow .viewer-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .viewer-prev {
+    left: 5px;
+  }
+
+  .viewer-next {
+    right: 5px;
+  }
+
+  .viewer-footer {
+    min-height: 88px;
+    padding: 6px 9px 8px;
+    grid-template-rows: auto 58px;
+  }
+
+  .viewer-thumb {
+    flex-basis: 50px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .viewer-stage video {
+    max-height: calc(100dvh - 160px);
+  }
+}
+
+
+/* ==========================================
+   ACCESIBILIDAD — MOVIMIENTO REDUCIDO
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .viewer-stage img,
+  .viewer-tools button,
+  .viewer-arrow {
+    transition: none;
+  }
+}
