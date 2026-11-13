@@ -1,9 +1,9 @@
 {
   "name": "ext-media",
-  "version": "1.7.0",
+  "version": "1.8.1",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check background.js && node --check content.js && node --check gallery.js && node --check popup.js && node --check shared/job-state.js && node --check shared/csv-export.js && node --check storage/indexed-db.js && node --check storage/job-repository.js && node --check shared/perutops-parser.js && node --check viewers/media-viewer.js"
+    "check": "node --check background.js && node --check content.js && node --check gallery.js && node --check popup.js && node --check shared/job-state.js && node --check shared/session-lifecycle.js && node --check shared/csv-export.js && node --check storage/indexed-db.js && node --check storage/job-repository.js && node --check shared/perutops-parser.js && node --check viewers/media-viewer.js"
   }
 }

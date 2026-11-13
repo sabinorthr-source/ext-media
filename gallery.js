@@ -23,6 +23,41 @@ function openMediaViewer(item, trigger) {
   window.ExtMediaViewer.open(data.items, index, item.type, trigger);
 }
 
+async function reportPreviewSuccess(item) {
+  if (!item.previewDiagnostic && !item.resolveError) return;
+  await chrome.runtime.sendMessage({ type: "PREVIEW_LOAD_DIAGNOSTIC", sessionId, mediaKey: item.dedupeKey || item.url, category: "resolved" }).catch(() => {});
+  delete item.previewDiagnostic;
+  delete item.resolveError;
+  delete item.resolveStatus;
+}
+
+async function diagnosePreviewFailure(rawUrl, item) {
+  let url;
+  try { url = new URL(rawUrl); } catch { return { category: "invalid-url", label: "URL inválida", detail: "La dirección de la vista previa no es una URL válida." }; }
+  if (!["http:", "https:"].includes(url.protocol)) return { category: "invalid-url", label: "Protocolo no permitido", detail: `Protocolo ${url.protocol} no permitido.` };
+  const trustedForumHost = ["perutops.com", "www.perutops.com", "media.perutops.com"].includes(url.hostname);
+  if (!trustedForumHost) return { category: "unverified-external", label: "Recurso externo no verificable", detail: "El navegador no permite determinar el estado HTTP de este servidor desde la extensión." };
+  try {
+    let response = await fetch(url.href, { method: "HEAD", credentials: "include", cache: "no-store", redirect: "follow" });
+    if ([401, 403, 405, 501].includes(response.status)) {
+      const headStatus = response.status;
+      const ranged = await fetch(url.href, { method: "GET", headers: { Range: "bytes=0-0" }, credentials: "include", cache: "no-store", redirect: "follow" });
+      try { await ranged.body?.cancel(); } catch {}
+      // Algunos servidores rechazan HEAD pero permiten GET. Solo clasificamos
+      // como acceso denegado si la petición GET también fue rechazada.
+      response = ranged.status >= 200 && ranged.status < 300 ? ranged : { status: headStatus, ok: false, headers: response.headers };
+    }
+    if (response.status === 401 || response.status === 403) return { category: "access-denied", label: `Acceso denegado (${response.status})`, detail: `El servidor respondió HTTP ${response.status}. Puede requerir autenticación o rechazar la carga desde la extensión.`, status: response.status };
+    if (response.status === 404 || response.status === 410) return { category: "resource-unavailable", label: `Recurso no disponible (${response.status})`, detail: `El servidor respondió HTTP ${response.status}.`, status: response.status };
+    if (!response.ok) return { category: "http-error", label: `Error HTTP ${response.status}`, detail: `El servidor respondió HTTP ${response.status}.`, status: response.status };
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.startsWith("image/")) return { category: "invalid-content-type", label: "El recurso no es una imagen", detail: `El servidor respondió con Content-Type: ${contentType}.`, status: response.status };
+    return { category: "display-failure", label: "Carga bloqueada o incompatible", detail: "El servidor respondió correctamente, pero el navegador no pudo mostrar la imagen.", status: response.status };
+  } catch (error) {
+    return { category: "network-or-permission", label: "Error de red o permisos", detail: `No se pudo consultar el servidor desde la extensión: ${error?.message || "error de red/permisos"}.` };
+  }
+}
+
 function createCard(item) {
   const card = make("article", "card");
   const preview = make("div", "preview");
@@ -33,11 +68,21 @@ function createCard(item) {
     const img = document.createElement("img");
     img.src = safeUrl(item.preview) || safeUrl(item.fallbackUrl) || safeUrl(item.url);
     img.alt = item.title || "Imagen"; img.loading = "lazy"; img.decoding = "async"; img.fetchPriority = "low";
-    img.addEventListener("error", () => {
-      const fallback = safeUrl(item.fallbackUrl) || safeUrl(item.url);
-      if (fallback && img.src !== fallback && !img.dataset.fallbackTried) { img.dataset.fallbackTried = "1"; img.src = fallback; }
-      else preview.replaceChildren(make("div", "placeholder", "Vista previa no disponible"));
+    const previewCandidates = [...new Set([safeUrl(item.preview), safeUrl(item.fallbackUrl), safeUrl(item.url)].filter(Boolean))];
+    let previewIndex = Math.max(0, previewCandidates.indexOf(img.src));
+    img.addEventListener("error", async () => {
+      previewIndex++;
+      if (previewIndex < previewCandidates.length) { img.src = previewCandidates[previewIndex]; return; }
+      const failedUrl = previewCandidates[0] || "";
+      const diagnostic = await diagnosePreviewFailure(failedUrl, item);
+      const message = diagnostic.label || "No se pudo determinar la causa de la carga.";
+      const placeholder = make("div", "placeholder", `Vista previa no disponible\n${message}`);
+      placeholder.title = diagnostic.detail || message;
+      preview.replaceChildren(placeholder);
+      status.textContent = `Vista previa no disponible: ${message}`;
+      chrome.runtime.sendMessage({ type: "PREVIEW_LOAD_DIAGNOSTIC", sessionId, mediaKey: item.dedupeKey || item.url, category: diagnostic.category, detail: diagnostic.detail || message, url: failedUrl, status: diagnostic.status || 0 }).catch(() => {});
     });
+    img.addEventListener("load", () => { reportPreviewSuccess(item).catch(() => {}); }, { once: true });
     img.addEventListener("click", event => openMediaViewer(item, event.currentTarget));
     preview.append(img);
   } else if (isVideo(item)) {
@@ -54,11 +99,11 @@ function createCard(item) {
   details.append(make("h3", "", item.title || labels[item.type] || "Recurso"));
   details.append(make("div", "meta", `Tipo: ${labels[item.type] || item.type || "Recurso"}`));
   if (item.author) details.append(make("div", "meta", `Autor: ${item.author}`));
-  if (item.isQuoted) details.append(make("div", "meta", `También aparece en una cita${item.quotedAuthor ? ` de ${item.quotedAuthor}` : ""}`));
+  if (item.resolveError) details.append(make("div", "meta", `Resolución del adjunto: ${item.resolveError}`));
+  if (item.previewDiagnostic?.message) details.append(make("div", "meta", `Último diagnóstico: ${item.previewDiagnostic.message}`));
   const actions = make("div", "card-actions");
   actions.append(externalLink(url, isVideo(item) ? "Abrir video" : "Abrir recurso"));
   if (item.sourcePage && safeUrl(item.sourcePage)) actions.append(externalLink(safeUrl(item.sourcePage), "Ir al mensaje"));
-  if (item.quotedPostUrl && safeUrl(item.quotedPostUrl)) actions.append(externalLink(safeUrl(item.quotedPostUrl), "Ir al mensaje citado"));
   const copy = make("button", "", "Copiar URL"); copy.type = "button";
   copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(url); status.textContent = "URL copiada."; } catch { status.textContent = "No se pudo copiar la URL."; } });
   actions.append(copy); details.append(actions); card.append(preview, details); return card;
@@ -158,7 +203,7 @@ document.getElementById("exportJson")?.addEventListener("click", async () => {
 document.getElementById("exportCsv")?.addEventListener("click", async () => {
   try {
     status.textContent = "Preparando exportación completa…";
-    const fields = ["type", "title", "url", "playUrl", "sourcePage", "author", "isQuoted", "quotedAuthor"];
+    const fields = ["type", "title", "url", "playUrl", "sourcePage", "author"];
     const parts = ["\uFEFF" + window.ExtMediaCsv.row(fields) + "\r\n"];
     let count = 0;
     await forEachExportPage(items => {
@@ -183,7 +228,6 @@ async function loadPage(offset) {
   if (!page) throw new Error("Los resultados de esta sesión ya no están disponibles.");
   data = page;
   render();
-  gallery.scrollIntoView({ block: "start" });
 }
 document.getElementById("prevPage")?.addEventListener("click", () => loadPage(Math.max(0, data.offset - data.limit)).catch(error => status.textContent = error.message));
 document.getElementById("nextPage")?.addEventListener("click", () => loadPage(data.offset + data.limit).catch(error => status.textContent = error.message));
@@ -207,6 +251,8 @@ updateScrollTopButton();
 async function init() {
   try {
     if (!sessionId) throw new Error("No se indicó la sesión de extracción.");
+    const registration = await chrome.runtime.sendMessage({ type: "GALLERY_SESSION_OPENED", sessionId });
+    if (registration?.ok === false) throw new Error(registration.error || "No se pudo registrar esta pestaña de galería.");
     const result = await chrome.runtime.sendMessage({ type: "GET_EXTRACTOR_RESULTS", sessionId, offset: 0, limit: 100 });
     if (result) data = result;
     else throw new Error("Los resultados de esta sesión ya no están disponibles.");

@@ -1,25 +1,27 @@
-# Ext-Media 1.6.0
+# Ext-Media 1.8.1
 
 Extensión Chrome Manifest V3 para extraer y organizar multimedia del tema activo de PeruTops. Los datos se almacenan localmente en IndexedDB; no usa backend, cuenta, nube ni CDN en tiempo de ejecución.
 
 ## Funciones
 - Recorrido de todas las páginas del tema activo, sin límite arbitrario de 200 páginas.
-- Extracción de imágenes, adjuntos, videos, embeds y enlaces, con contexto de publicación/cita.
+- Extracción de imágenes, adjuntos, videos, embeds y enlaces, con contexto de publicación.
 - Persistencia por sesión y paginación de galería de 100 recursos.
 - Renderizado progresivo de 30 tarjetas y carga diferida de miniaturas.
 - Visor único con navegación separada por tipo, miniaturas, zoom, fullscreen y soporte de teclado/táctil.
 - Exportación completa JSON/CSV y copia de URLs mediante lectura paginada.
 - CSV protegido frente a fórmulas de hoja de cálculo.
-- Limpieza por sesión e higiene de sesiones antiguas; las sesiones activas no se eliminan.
-- Manejo de cuota: limpieza de sesiones terminadas y, si no alcanza, finalización parcial preservando los datos persistidos.
+- Seguimiento de pestañas que utilizan cada sesión; al cerrar la última galería se eliminan sus datos y la extracción desaparece de «Extracciones recientes».
+- Recuperación de pestañas y limpieza de sesiones terminales huérfanas/interrumpidas.
+- La acción «Limpiar» permanece dentro de la galería; el popup ya no elimina datos. Si se abren dos galerías para la misma sesión, cerrar solo una conserva los resultados de la otra.
+- Manejo de cuota: limpieza de sesiones terminales sin galería activa y, si no alcanza, finalización parcial preservando los datos persistidos.
 
 ## Instalación
 1. Descomprime el ZIP en una carpeta permanente.
 2. Abre `chrome://extensions/` y activa Modo desarrollador.
-3. Pulsa **Cargar descomprimida** y selecciona la carpeta `ext-media-v1.6.0`.
+3. Pulsa **Cargar descomprimida** y selecciona la carpeta `ext-media-v1.8.1`.
 4. Inicia la extracción desde una página de tema de PeruTops.
 
-Para actualizar una instalación anterior, conserva la misma carpeta e identidad de extensión; haz copia de seguridad y pulsa Recargar. No desinstales si quieres conservar IndexedDB.
+Para actualizar una instalación anterior, conserva la misma carpeta e identidad de extensión; haz copia de seguridad y pulsa Recargar. No desinstales si quieres conservar IndexedDB. Al actualizar a esta versión, cierra las galerías antiguas y vuelve a abrirlas para registrar sus pestañas.
 
 ## Pruebas
 ```bash
@@ -35,8 +37,16 @@ npm run check
 - No se considera validado en producción hasta completar las pruebas manuales en Chrome autenticado.
 
 
-## Modo prudente (1.7.0)
+## Versión 1.8.1
 
-La extracción espera al menos 2 segundos entre inicios de solicitudes HTTP de la extensión. Las páginas y adjuntos se consultan secuencialmente. Si el foro responde HTTP 401, 403 o 429, o se detecta una pantalla de inicio de sesión/verificación, la extracción se detiene sin reintentos automáticos. Los recursos ya persistidos se conservan y el trabajo se marca como parcial cuando corresponde. Esta reducción de frecuencia no garantiza que la actividad sea indetectable ni evita por sí sola sanciones: deben respetarse las reglas del foro.
+- La paginación «Siguiente»/«Anterior» ya no desplaza automáticamente la galería; la posición de lectura queda bajo control del usuario.
+- Se conserva el tamaño de página de 100 recursos y el renderizado progresivo.
+- Dexie.js y GLightbox se evaluaron y se decidió no adoptarlos todavía: el beneficio neto no compensa la reescritura y las pruebas de regresión necesarias. El detalle está en `PR6.4-CHANGELOG.md`.
 
-El visor permite zoom de 1× a 4× con rueda, botón o teclado, y desplazamiento panorámico con mouse o pantalla táctil, limitado a los bordes de la imagen.
+## Versión 1.8.0
+
+- Los enlaces normales y URLs escritas en el texto de las publicaciones vuelven a incluirse en el catálogo.
+- Se omiten recursos que aparecen únicamente dentro de citas; se retiran los metadatos y enlaces de navegación de citas.
+- La galería registra diagnósticos de errores de miniaturas. Para dominios PeruTops autorizados puede consultar el estado HTTP con HEAD (y GET Range si HEAD no está soportado); para dominios externos sin permisos informa que el estado no es verificable.
+- Los adjuntos se resuelven desde la sesión autenticada del sitio y guardan una URL directa/fallback cuando el servidor la proporciona.
+- IndexedDB v3 limpia los campos heredados de citas sin borrar las sesiones existentes.

@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Ext-Media",
-  "version": "1.7.0",
+  "version": "1.8.2",
   "description": "Extensión local para extraer y organizar multimedia de temas.",
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "icons": {
     "16": "assets/logo.png",
@@ -14,7 +15,8 @@
   },
   "host_permissions": [
     "https://perutops.com/*",
-    "https://www.perutops.com/*"
+    "https://www.perutops.com/*",
+    "https://media.perutops.com/*"
   ],
   "action": {
     "default_title": "Extraer multimedia",

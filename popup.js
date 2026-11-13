@@ -31,26 +31,17 @@ async function loadRecentJobs() {
       const open = node("button", "", "Ver resultados guardados");
       open.type = "button";
       open.disabled = ["running", "queued", "finalizing"].includes(job.status);
-      open.addEventListener("click", () => {
-        chrome.tabs.create({ url: `${chrome.runtime.getURL("gallery.html")}?sessionId=${encodeURIComponent(job.sessionId)}` });
-      });
-      const remove = node("button", "secondary", "Eliminar datos");
-      remove.type = "button";
-      remove.disabled = ["running", "queued", "finalizing"].includes(job.status);
-      remove.title = "Elimina los recursos y también esta entrada del historial";
-      remove.addEventListener("click", async () => {
-        if (!confirm("¿Eliminar todos los recursos y el registro de esta extracción?")) return;
-        remove.disabled = true;
+      open.addEventListener("click", async () => {
+        open.disabled = true;
         try {
-          const result = await chrome.runtime.sendMessage({ type: "CLEAR_EXTRACTOR_RESULTS", sessionId: job.sessionId });
-          if (result?.ok === false) throw new Error(result.error || "No se pudo eliminar.");
-          await loadRecentJobs();
+          const result = await chrome.runtime.sendMessage({ type: "OPEN_EXTRACTOR_GALLERY", sessionId: job.sessionId });
+          if (result?.ok === false) throw new Error(result.error || "No se pudo abrir la galería.");
         } catch (error) {
-          remove.disabled = false;
-          status.textContent = `No se pudo eliminar la extracción: ${error.message}`;
+          open.disabled = false;
+          status.textContent = `No se pudo abrir la extracción: ${error.message}`;
         }
       });
-      card.append(open, remove);
+      card.append(open);
       recentJobs.append(card);
     }
   } catch (error) {

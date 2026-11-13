@@ -1,33 +1,18 @@
 # Changelog
 
-## 1.6.0 — PR4 + PR5
+## 1.8.1 — PR6.4: simplificación OSS y navegación manual
 
-### PR4 — Galería y visor
-- Un único diálogo accesible `mediaViewer`; se elimina el visor dinámico heredado.
-- Prototipo local de lightbox inspirado en GLightbox, sin dependencia externa ni CDN.
-- Navegación estrictamente separada: imágenes solo recorren imágenes; videos solo recorren videos.
-- Tira de miniaturas, zoom básico, fullscreen nativo, teclado, gestos táctiles y retorno del foco.
-- Videos se pausan y se descargan del DOM al cambiar de elemento o cerrar el visor.
-- Tarjetas de video usan poster/miniatura y no crean reproductores de video en cada tarjeta.
-- Renderizado progresivo de 30 tarjetas dentro de la página de 100 resultados.
+- Se elimina el desplazamiento automático al cambiar de bloque en la galería; la navegación queda bajo control del usuario.
+- Se conserva la paginación de 100 recursos y el renderizado progresivo.
+- Se evalúan Dexie.js y GLightbox; se difiere su adopción porque la reducción de complejidad no está demostrada frente al riesgo de reescritura y pérdida de capacidades del visor.
+- TanStack Virtual queda aplazado hasta que mediciones reales justifiquen virtualización.
 
-### PR5 — Pruebas y endurecimiento
-- CSV neutraliza fórmulas de hoja de cálculo y escapa comillas.
-- Exportaciones JSON/CSV y copia de URLs recorren páginas de 100 sin reunir todo el catálogo en un array de objetos.
-- URLs de recursos exportadas se limitan a HTTP/HTTPS.
-- Ante cuota excedida, intenta limpiar solo sesiones terminadas antiguas/sobrantes y reintenta el lote una vez.
-- Si el almacenamiento sigue lleno, detiene el rastreo, conserva resultados guardados y marca la extracción como parcial.
-- Se añaden pruebas de regresión de visor, CSV, temas extensos, lotes, sesión autenticada, memoria de página y cuota.
+## 1.8.0 — PR6.3 + recuperación de enlaces y simplificación de citas
 
-### Validación pendiente en Chrome
-- Reproducción de videos reales y protegidos con sesión iniciada.
-- Fullscreen y gestos en Windows/Android.
-- Carga de imágenes originales con token y CDN de PeruTops.
-- Prueba de cuota real de IndexedDB y catálogos de varios miles de recursos.
-
-
-## 1.7.0 — PR6
-- Modo prudente: intervalo de 2 s entre inicios de solicitudes, páginas y adjuntos secuenciales.
-- Detención sin reintentos ante HTTP 401/403/429 y pantallas de acceso/verificación detectables.
-- Conservación de recursos persistidos y estado parcial al detenerse por una barrera.
-- Zoom panorámico con mouse/táctil, rueda, límites de movimiento y máximo 4×.
+- Se recupera la catalogación de enlaces HTTP/HTTPS normales y URLs escritas como texto en publicaciones.
+- Se excluye el contenido multimedia y los enlaces dentro de citas; se eliminan sus metadatos y el acceso «Ir al mensaje citado».
+- Se añade diagnóstico persistente de vistas previas: URL inválida, acceso denegado, recurso inexistente, error HTTP, tipo de contenido incorrecto, error de red/permisos y fallo de visualización.
+- Se comprueban mediante HEAD los recursos de dominios PeruTops autorizados; se usa GET con Range solo si HEAD no está soportado.
+- Se mejora la resolución de adjuntos protegidos con credenciales, URL directa y fallback de miniatura.
+- Se amplían permisos de host a subdominios de PeruTops para consultar el CDN multimedia desde la galería.
+- IndexedDB v3 migra y elimina metadatos heredados de citas.

@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -39,20 +38,30 @@
     <button id="nextPage" disabled>Siguiente</button>
   </div>
   <main id="gallery" class="gallery"></main>
-  <button id="scrollTop" class="scroll-top" type="button" aria-label="Volver al inicio" title="Volver al inicio">↑</button>
+  <button id="scrollTop" class="scroll-top" type="button" aria-label="Volver al inicio" title="Volver al inicio"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m18 15-6-6-6 6"/>
+    </svg></button>
 
   <dialog id="mediaViewer" class="media-viewer" aria-label="Visor multimedia">
     <header class="viewer-toolbar">
       <div class="viewer-heading"><span id="viewerKind" class="viewer-kind">IMÁGENES</span><span id="viewerCounter" class="viewer-counter">0 / 0</span></div>
       <div class="viewer-tools">
         <button id="viewerZoom" type="button" title="Ampliar imagen" aria-label="Ampliar imagen">＋</button>
-        <button id="viewerFullscreen" type="button" title="Pantalla completa" aria-label="Pantalla completa">⛶</button>
-        <button id="viewerClose" type="button" class="viewer-close" title="Cerrar" aria-label="Cerrar visor">×</button>
+        <button id="viewerFullscreen" type="button" title="Pantalla completa" aria-label="Pantalla completa"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg></button>
+        <button id="viewerClose" type="button" class="viewer-close" title="Cerrar" aria-label="Cerrar visor"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m18 6-12 12M6 6l12 12"/>
+          </svg></button>
       </div>
     </header>
-    <button id="viewerPrev" class="viewer-arrow viewer-prev" type="button" aria-label="Anterior">‹</button>
+    <button id="viewerPrev" class="viewer-arrow viewer-prev" type="button" aria-label="Anterior"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6"/>
+      </svg></button>
     <section id="viewerStage" class="viewer-stage" aria-live="off"></section>
-    <button id="viewerNext" class="viewer-arrow viewer-next" type="button" aria-label="Siguiente">›</button>
+    <button id="viewerNext" class="viewer-arrow viewer-next" type="button" aria-label="Siguiente"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m9 18 6-6-6-6"/>
+      </svg></button>
     <footer class="viewer-footer"><div id="viewerCaption" class="viewer-caption"></div><div id="viewerThumbs" class="viewer-thumbs" aria-label="Miniaturas"></div></footer>
   </dialog>
 

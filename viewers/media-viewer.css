@@ -1,0 +1,640 @@
+/* =========================================================
+   EXT-MEDIA
+   DESIGN SYSTEM — MINIMAL DARK
+   Immersive Media Viewer
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. VIEWER TOKENS
+   --------------------------------------------------------- */
+
+:root {
+  --viewer-bg: #08080a;
+  --viewer-surface: #111114;
+  --viewer-surface-hover: #1c1c22;
+
+  --viewer-text: #f4f4f5;
+  --viewer-text-secondary: #a1a1aa;
+  --viewer-text-muted: #71717a;
+
+  --viewer-border: #27272a;
+  --viewer-border-hover: #52525b;
+
+  --viewer-accent: #818cf8;
+
+  --viewer-radius: 8px;
+
+  --viewer-transition: 140ms ease;
+}
+
+/* ---------------------------------------------------------
+   2. DIALOG
+   --------------------------------------------------------- */
+
+.media-viewer {
+  position: fixed;
+  inset: 0;
+
+  display: none;
+
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+
+  max-width: none;
+  max-height: none;
+
+  margin: 0;
+  padding: 0;
+
+  color: var(--viewer-text);
+  background: var(--viewer-bg);
+
+  border: 0;
+
+  overflow: hidden;
+
+  grid-template-rows:
+    58px
+    minmax(0, 1fr)
+    auto;
+
+  isolation: isolate;
+}
+
+.media-viewer[open] {
+  display: grid;
+}
+
+.media-viewer::backdrop {
+  background: #000;
+}
+
+/* ---------------------------------------------------------
+   3. TOOLBAR
+   --------------------------------------------------------- */
+
+.viewer-toolbar {
+  grid-row: 1;
+  z-index: 5;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-width: 0;
+  min-height: 58px;
+
+  padding: 0 22px;
+
+  background: var(--viewer-bg);
+
+  border-bottom: 1px solid var(--viewer-border);
+}
+
+.viewer-heading,
+.viewer-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.viewer-heading {
+  min-width: 0;
+}
+
+.viewer-kind {
+  color: var(--viewer-text);
+
+  font-size: 11px;
+  font-weight: 650;
+
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.viewer-counter {
+  color: var(--viewer-text-muted);
+
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------
+   4. TOOLBAR BUTTONS
+   --------------------------------------------------------- */
+
+.viewer-tools button,
+.viewer-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 38px;
+
+  padding: 0;
+
+  color: var(--viewer-text-secondary);
+  background: transparent;
+
+  border: 1px solid transparent;
+  border-radius: var(--viewer-radius);
+
+  cursor: pointer;
+
+  transition:
+    color var(--viewer-transition),
+    background var(--viewer-transition),
+    border-color var(--viewer-transition),
+    opacity var(--viewer-transition);
+}
+
+.viewer-tools button {
+  width: 38px;
+  height: 38px;
+}
+
+.viewer-tools button:hover:not(:disabled),
+.viewer-arrow:hover:not(:disabled) {
+  color: #fff;
+  background: var(--viewer-surface-hover);
+  border-color: var(--viewer-border);
+}
+
+.viewer-tools button:active:not(:disabled),
+.viewer-arrow:active:not(:disabled) {
+  background: #ffffff20;
+}
+
+.viewer-tools button:disabled,
+.viewer-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------
+   5. CLOSE BUTTON
+   --------------------------------------------------------- */
+
+.viewer-tools .viewer-close {
+  color: var(--viewer-text-secondary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.viewer-tools .viewer-close:hover {
+  color: #fff;
+  background: #ffffff12;
+}
+
+/* ---------------------------------------------------------
+   6. FOCUS
+   --------------------------------------------------------- */
+
+.viewer-tools button:focus-visible,
+.viewer-arrow:focus-visible,
+.viewer-thumb:focus-visible {
+  outline: 2px solid var(--viewer-accent);
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------
+   7. MEDIA STAGE
+   --------------------------------------------------------- */
+
+.viewer-stage {
+  grid-row: 2;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 0;
+  min-height: 0;
+
+  padding: 20px 78px;
+
+  overflow: hidden;
+
+  background: var(--viewer-bg);
+}
+
+/* ---------------------------------------------------------
+   8. IMAGE VIEWER
+   --------------------------------------------------------- */
+
+.viewer-stage img {
+  display: block;
+
+  max-width: 100%;
+  max-height: 100%;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain;
+  object-position: center;
+
+  user-select: none;
+  -webkit-user-drag: none;
+
+  cursor: zoom-in;
+
+  transform-origin: center center;
+
+  transition: transform 160ms ease;
+}
+
+.viewer-stage img.is-zoomed {
+  max-width: none;
+  max-height: none;
+
+  cursor: grab;
+}
+
+.viewer-stage img.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* ---------------------------------------------------------
+   9. VIDEO VIEWER
+   --------------------------------------------------------- */
+
+.viewer-stage video {
+  display: block;
+
+  width: min(100%, 1440px);
+  height: 100%;
+
+  max-height: calc(100dvh - 220px);
+
+  object-fit: contain;
+
+  background: #000;
+
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------
+   10. ERROR STATE
+   --------------------------------------------------------- */
+
+.viewer-stage .viewer-error {
+  max-width: 480px;
+  padding: 24px;
+
+  color: var(--viewer-text-secondary);
+
+  text-align: center;
+
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.viewer-stage .viewer-error a {
+  color: #a5b4fc;
+
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------
+   11. NAVIGATION ARROWS
+   --------------------------------------------------------- */
+
+.viewer-arrow {
+  position: absolute;
+  top: 50%;
+
+  z-index: 4;
+
+  width: 44px;
+  height: 54px;
+  min-height: 54px;
+
+  color: var(--viewer-text-secondary);
+
+  background: #ffffff08;
+
+  border: 1px solid #ffffff12;
+
+  transform: translateY(-50%);
+}
+
+.viewer-prev {
+  left: 16px;
+}
+
+.viewer-next {
+  right: 16px;
+}
+
+.viewer-arrow:disabled {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.viewer-arrow:hover:not(:disabled) {
+  transform: translateY(-50%);
+}
+
+/* ---------------------------------------------------------
+   12. FOOTER
+   --------------------------------------------------------- */
+
+.viewer-footer {
+  grid-row: 3;
+
+  display: grid;
+
+  grid-template-rows: auto 76px;
+
+  gap: 7px;
+
+  min-height: 112px;
+
+  padding: 8px 18px 12px;
+
+  background: var(--viewer-bg);
+
+  border-top: 1px solid var(--viewer-border);
+}
+
+/* ---------------------------------------------------------
+   13. CAPTION
+   --------------------------------------------------------- */
+
+.viewer-caption {
+  min-width: 0;
+  min-height: 20px;
+
+  color: var(--viewer-text-secondary);
+
+  text-align: center;
+
+  font-size: 12px;
+  line-height: 20px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   14. THUMBNAIL STRIP
+   --------------------------------------------------------- */
+
+.viewer-thumbs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  gap: 8px;
+
+  min-width: 0;
+
+  padding: 3px 2px 6px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  overscroll-behavior-x: contain;
+
+  scrollbar-width: thin;
+  scrollbar-color: #45454d transparent;
+}
+
+.viewer-thumbs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.viewer-thumbs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.viewer-thumbs::-webkit-scrollbar-thumb {
+  background: #45454d;
+  border-radius: 99px;
+}
+
+/* ---------------------------------------------------------
+   15. INDIVIDUAL THUMBNAIL
+   --------------------------------------------------------- */
+
+.viewer-thumb {
+  position: relative;
+
+  flex: 0 0 64px;
+
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+
+  padding: 0;
+
+  overflow: hidden;
+
+  background: var(--viewer-surface);
+
+  border: 1px solid #ffffff15;
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  opacity: 0.55;
+
+  transition:
+    opacity var(--viewer-transition),
+    border-color var(--viewer-transition),
+    transform var(--viewer-transition);
+}
+
+.viewer-thumb:hover {
+  opacity: 0.95;
+  border-color: var(--viewer-border-hover);
+}
+
+.viewer-thumb:active {
+  transform: scale(0.96);
+}
+
+.viewer-thumb[aria-current="true"] {
+  opacity: 1;
+
+  border: 2px solid var(--viewer-accent);
+  box-shadow: 0 0 0 2px #818cf81a;
+}
+
+.viewer-thumb img {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------
+   16. VIDEO THUMBNAIL
+   --------------------------------------------------------- */
+
+.viewer-thumb .video-thumb {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: #fff;
+
+  background: var(--viewer-surface-hover);
+
+  font-size: 22px;
+}
+
+.viewer-thumb .video-thumb small {
+  position: absolute;
+
+  right: 4px;
+  bottom: 3px;
+
+  color: #fff;
+
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+/* ---------------------------------------------------------
+   17. BODY LOCK
+   --------------------------------------------------------- */
+
+body.viewer-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ---------------------------------------------------------
+   18. ICONS
+   --------------------------------------------------------- */
+
+.media-viewer .icon {
+  display: block;
+
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------
+   19. RESPONSIVE — TABLET / MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .viewer-toolbar {
+    padding: 0 12px;
+  }
+
+  .viewer-heading,
+  .viewer-tools {
+    gap: 7px;
+  }
+
+  .viewer-tools button {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+
+  .viewer-stage {
+    padding: 12px 48px;
+  }
+
+  .viewer-arrow {
+    width: 38px;
+    height: 46px;
+    min-height: 46px;
+  }
+
+  .viewer-prev {
+    left: 5px;
+  }
+
+  .viewer-next {
+    right: 5px;
+  }
+
+  .viewer-footer {
+    min-height: 102px;
+
+    padding: 7px 10px 9px;
+
+    grid-template-rows: auto 64px;
+  }
+
+  .viewer-thumb {
+    flex-basis: 54px;
+
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+  }
+
+  .viewer-stage video {
+    max-height: calc(100dvh - 180px);
+  }
+}
+
+/* ---------------------------------------------------------
+   20. SMALL MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 380px) {
+  .viewer-kind {
+    font-size: 10px;
+  }
+
+  .viewer-counter {
+    font-size: 11px;
+  }
+
+  .viewer-tools {
+    gap: 3px;
+  }
+
+  .viewer-tools button {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .viewer-stage {
+    padding-inline: 42px;
+  }
+
+  .viewer-footer {
+    padding-inline: 7px;
+  }
+}
+
+/* ---------------------------------------------------------
+   21. REDUCED MOTION
+   --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-stage img,
+  .viewer-tools button,
+  .viewer-arrow,
+  .viewer-thumb {
+    transition: none;
+  }
+}
